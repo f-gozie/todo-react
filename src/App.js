@@ -1,21 +1,36 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
+import Todos from './components/Todos';
 import './App.css';
 
 class App extends Component {
-  render() {
-    return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h1 className="App-title">Welcome to React</h1>
-        </header>
-        <p className="App-intro">
-          To get started, edit <code>src/App.js</code> and save to reload.
-        </p>
-      </div>
-    );
-  }
+
+	state = {
+		todos: [
+			{
+				id: 1,
+				title: "Take out the trash",
+				completed: false,
+			},
+			{
+				id: 2,
+				title: "Push committed changes",
+				completed: true,
+			},
+			{
+				id: 3,
+				title: "Populate DB using script",
+				completed: false,
+			}
+		]
+	}
+	
+	render() {
+		return (
+			<div className="App">
+				<Todos todos={this.state.todos}/>
+			</div>
+		);
+	}
 }
 
 export default App;
