@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Music Sync App</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        h1, h2, h3 { border-bottom: 1px solid #ccc; padding-bottom: 5px; color: #333; }
+        ul { list-style: none; padding-left: 0; }
+        li { margin-bottom: 8px; }
+        a { text-decoration: none; color: #007bff; }
+        a:hover { text-decoration: underline; }
+        .service-section { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        input[type="text"] { padding: 8px; margin-right: 5px; border: 1px solid #ccc; border-radius: 3px; box-sizing: border-box; }
+        button, .button { 
+            padding: 8px 15px; 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 3px; 
+            cursor: pointer; 
+            font-size: 14px;
+            display: inline-block; /* For <a> styled as button */
+            text-align: center;
+        }
+        button:hover, .button:hover { background-color: #0056b3; }
+        .sync-section { margin-top: 30px; padding: 15px; border: 1px solid #007bff; border-radius: 5px; background-color: #e7f3ff; }
+        .sync-section h2 { color: #007bff; border-bottom-color: #007bff;}
+        #sync-results { margin-top: 15px; padding: 10px; background-color: #fff; border-radius: 3px; min-height: 50px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
+        label { display: block; margin-bottom: 3px; font-weight: bold; font-size: 0.9em; }
+    </style>
+    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+</head>
+<body>
+    <h1>Music Sync App</h1>
+    <p>Choose a service to login and manage your music. Once logged into services, you can analyze differences in your liked songs library.</p>
+
+    <div class="sync-section">
+        <h2>Liked Songs Synchronization</h2>
+        <button hx-post="/sync/liked/analyze" hx-target="#sync-results" hx-indicator="#loading-indicator">
+            Analyze Liked Songs Differences
+        </button>
+        <span id="loading-indicator" class="htmx-indicator"> Loading...</span>
+        <div id="sync-results">
+            <p>Click 'Analyze' to see proposed sync actions for your liked songs across connected services.</p>
+        </div>
+    </div>
+
+    <div class="service-section">
+        <h2>Spotify</h2>
+        <ul>
+            <li><a href="/login/spotify" class="button">Login with Spotify</a></li>
+            <li><a href="/me/spotify">View Spotify Profile</a> (requires login)</li>
+            <li><a href="/spotify/liked-songs" target="_blank">View Liked Songs (JSON)</a> (requires login)</li>
+            <li><a href="/spotify/playlists" target="_blank">View Playlists (JSON)</a> (requires login)</li>
+            <li>
+                <form onsubmit="event.preventDefault(); window.open('/spotify/playlists/' + document.getElementById('spotify_playlist_id').value + '/tracks', '_blank');">
+                    <label for="spotify_playlist_id">View Tracks for Playlist ID:</label>
+                    <input type="text" id="spotify_playlist_id" name="spotify_playlist_id" placeholder="Enter Spotify Playlist ID">
+                    <button type="submit">View Tracks (JSON)</button>
+                </form>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="service-section">
+        <h2>Deezer</h2>
+        <ul>
+            <li><a href="/login/deezer" class="button">Login with Deezer</a></li>
+            <li><a href="/me/deezer">View Deezer Profile</a> (requires login)</li>
+            <li><a href="/deezer/liked-songs" target="_blank">View Liked Songs (JSON)</a> (requires login)</li>
+            <li><a href="/deezer/playlists" target="_blank">View Playlists (JSON)</a> (requires login)</li>
+            <li>
+                <form onsubmit="event.preventDefault(); window.open('/deezer/playlists/' + document.getElementById('deezer_playlist_id').value + '/tracks', '_blank');">
+                    <label for="deezer_playlist_id">View Tracks for Playlist ID:</label>
+                    <input type="text" id="deezer_playlist_id" name="deezer_playlist_id" placeholder="Enter Deezer Playlist ID">
+                    <button type="submit">View Tracks (JSON)</button>
+                </form>
+            </li>
+        </ul>
+    </div>
+
+    <div class="service-section">
+        <h2>YouTube Music (Google)</h2>
+        <ul>
+            <li><a href="/login/youtube" class="button">Login with YouTube</a></li>
+            <li><a href="/me/youtube">View YouTube Profile</a> (requires login)</li>
+            <li><a href="/youtube/liked-videos" target="_blank">View Liked Videos (JSON)</a> (requires login)</li>
+            <li><a href="/youtube/playlists" target="_blank">View Playlists (JSON)</a> (requires login)</li>
+            <li>
+                <form onsubmit="event.preventDefault(); window.open('/youtube/playlists/' + document.getElementById('youtube_playlist_id').value + '/items', '_blank');">
+                    <label for="youtube_playlist_id">View Items for Playlist ID:</label>
+                    <input type="text" id="youtube_playlist_id" name="youtube_playlist_id" placeholder="Enter YouTube Playlist ID">
+                    <button type="submit">View Items (JSON)</button>
+                </form>
+            </li>
+        </ul>
+    </div>
+
+</body>
+</html>

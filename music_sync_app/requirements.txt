@@ -1,0 +1,8 @@
+spotipy
+google-api-python-client
+deezer-python
+schedule
+requests
+fastapi
+uvicorn[standard]
+jinja2
