@@ -2,99 +2,673 @@
 <html>
 <head>
     <title>Music Sync App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-        h1, h2, h3 { border-bottom: 1px solid #ccc; padding-bottom: 5px; color: #333; }
-        ul { list-style: none; padding-left: 0; }
-        li { margin-bottom: 8px; }
-        a { text-decoration: none; color: #007bff; }
-        a:hover { text-decoration: underline; }
-        .service-section { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        input[type="text"] { padding: 8px; margin-right: 5px; border: 1px solid #ccc; border-radius: 3px; box-sizing: border-box; }
-        button, .button { 
-            padding: 8px 15px; 
-            background-color: #007bff; 
-            color: white; 
-            border: none; 
-            border-radius: 3px; 
-            cursor: pointer; 
-            font-size: 14px;
-            display: inline-block; /* For <a> styled as button */
-            text-align: center;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        button:hover, .button:hover { background-color: #0056b3; }
-        .sync-section { margin-top: 30px; padding: 15px; border: 1px solid #007bff; border-radius: 5px; background-color: #e7f3ff; }
-        .sync-section h2 { color: #007bff; border-bottom-color: #007bff;}
-        #sync-results { margin-top: 15px; padding: 10px; background-color: #fff; border-radius: 3px; min-height: 50px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
-        label { display: block; margin-bottom: 3px; font-weight: bold; font-size: 0.9em; }
+        
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --dark-bg: #0a0a0f;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --text-primary: #ffffff;
+            --text-secondary: #a8a8b3;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --spotify-green: #1DB954;
+            --deezer-orange: #FF6D00;
+            --youtube-red: #FF0000;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(240, 147, 251, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(79, 172, 254, 0.1) 0%, transparent 50%);
+            background-attachment: fixed;
+        }
+        
+        /* Animated particles background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20% 30%, white, transparent),
+                radial-gradient(2px 2px at 60% 70%, white, transparent),
+                radial-gradient(1px 1px at 50% 50%, white, transparent);
+            background-size: 200px 200px;
+            background-repeat: repeat;
+            opacity: 0.02;
+            animation: stars 200s linear infinite;
+            z-index: -1;
+        }
+        
+        @keyframes stars {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-100px, -100px); }
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header Section */
+        .header {
+            text-align: center;
+            margin: 40px 0 60px;
+            animation: fadeInDown 0.8s ease;
+        }
+        
+        .header h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            animation: glow 3s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 20px rgba(102, 126, 234, 0.5)); }
+            to { filter: drop-shadow(0 0 30px rgba(240, 147, 251, 0.8)); }
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        /* Sync Section - Hero Card */
+        .sync-hero {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            padding: 40px;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+        
+        .sync-hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: var(--accent-gradient);
+            opacity: 0.1;
+            transform: rotate(45deg);
+            transition: transform 0.6s ease;
+        }
+        
+        .sync-hero:hover::before {
+            transform: rotate(45deg) translateX(50px);
+        }
+        
+        .sync-hero h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .sync-hero h2 i {
+            font-size: 1.8rem;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .sync-button {
+            background: var(--accent-gradient);
+            border: none;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding: 16px 40px;
+            border-radius: 50px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(79, 172, 254, 0.3);
+            z-index: 1;
+        }
+        
+        .sync-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(79, 172, 254, 0.4);
+        }
+        
+        .sync-button:active {
+            transform: translateY(0);
+        }
+        
+        .sync-button .ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+        
+        .htmx-indicator {
+            display: none;
+            margin-left: 20px;
+            color: var(--text-secondary);
+        }
+        
+        .htmx-request .htmx-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .htmx-indicator::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 3px solid transparent;
+            border-top-color: var(--text-secondary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        #sync-results {
+            margin-top: 30px;
+            min-height: 100px;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        /* Service Cards */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .service-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.8s ease both;
+        }
+        
+        .service-card:nth-child(1) { animation-delay: 0.3s; }
+        .service-card:nth-child(2) { animation-delay: 0.4s; }
+        .service-card:nth-child(3) { animation-delay: 0.5s; }
+        
+        .service-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            border-radius: 24px 24px 0 0;
+        }
+        
+        .service-card.spotify::before { background: var(--spotify-green); }
+        .service-card.deezer::before { background: var(--deezer-orange); }
+        .service-card.youtube::before { background: var(--youtube-red); }
+        
+        .service-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+        
+        .service-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .service-title i {
+            font-size: 2rem;
+        }
+        
+        .service-title .fa-spotify { color: var(--spotify-green); }
+        .service-title .fa-deezer { color: var(--deezer-orange); }
+        .service-title .fa-youtube { color: var(--youtube-red); }
+        
+        .service-title h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .service-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #444;
+            position: relative;
+        }
+        
+        .service-status.connected {
+            background: #4ade80;
+            box-shadow: 0 0 10px #4ade80;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+        }
+        
+        .service-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .service-button {
+            background: transparent;
+            border: 2px solid;
+            color: white; 
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer; 
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .service-button.primary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .spotify .service-button {
+            border-color: var(--spotify-green);
+        }
+        
+        .spotify .service-button:hover {
+            background: var(--spotify-green);
+            box-shadow: 0 5px 20px rgba(29, 185, 84, 0.4);
+        }
+        
+        .deezer .service-button {
+            border-color: var(--deezer-orange);
+        }
+        
+        .deezer .service-button:hover {
+            background: var(--deezer-orange);
+            box-shadow: 0 5px 20px rgba(255, 109, 0, 0.4);
+        }
+        
+        .youtube .service-button {
+            border-color: var(--youtube-red);
+        }
+        
+        .youtube .service-button:hover {
+            background: var(--youtube-red);
+            box-shadow: 0 5px 20px rgba(255, 0, 0, 0.4);
+        }
+        
+        .service-links {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .service-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        .service-link:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .input-group {
+            margin-top: 20px;
+            position: relative;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .input-group button {
+            position: absolute;
+            right: 6px;
+            bottom: 6px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .input-group button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .sync-hero {
+                padding: 25px;
+            }
+            
+            .services-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .service-links {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
     <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
 </head>
 <body>
-    <h1>Music Sync App</h1>
-    <p>Choose a service to login and manage your music. Once logged into services, you can analyze differences in your liked songs library.</p>
+    <div class="container">
+        <header class="header">
+            <h1>Music Sync Hub</h1>
+            <p>Seamlessly synchronize your music across Spotify, Deezer, and YouTube. Connect your accounts and let the magic happen.</p>
+        </header>
 
-    <div class="sync-section">
-        <h2>Liked Songs Synchronization</h2>
-        <button hx-post="/sync/liked/analyze" hx-target="#sync-results" hx-indicator="#loading-indicator">
-            Analyze Liked Songs Differences
+        <div class="sync-hero">
+            <h2><i class="fas fa-sync-alt"></i> Liked Songs Synchronization</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 25px;">
+                Analyze and sync your favorite tracks across all connected platforms with one click.
+            </p>
+            <button class="sync-button" hx-post="/sync/liked/analyze" hx-target="#sync-results" hx-indicator="#loading-indicator">
+                <i class="fas fa-magic"></i> Analyze Song Differences
         </button>
-        <span id="loading-indicator" class="htmx-indicator"> Loading...</span>
+            <span id="loading-indicator" class="htmx-indicator">
+                Analyzing your music library
+            </span>
         <div id="sync-results">
-            <p>Click 'Analyze' to see proposed sync actions for your liked songs across connected services.</p>
+                <p style="color: var(--text-secondary); text-align: center; padding: 20px;">
+                    <i class="fas fa-info-circle"></i> Connect your music services and click analyze to discover sync opportunities.
+                </p>
+            </div>
+        </div>
+
+        <div class="services-grid">
+            <!-- Spotify Card -->
+            <div class="service-card spotify">
+                <div class="service-header">
+                    <div class="service-title">
+                        <i class="fab fa-spotify"></i>
+                        <h3>Spotify</h3>
+                    </div>
+                    <div class="service-status" id="spotify-status"></div>
+    </div>
+
+                <div class="service-actions">
+                    <a href="/auth/spotify/login" class="service-button primary">
+                        <i class="fas fa-sign-in-alt"></i> Connect Spotify
+                    </a>
+                    
+                    <div class="service-links">
+                        <a href="/me/spotify" class="service-link">
+                            <i class="fas fa-user"></i> Profile
+                        </a>
+                        <a href="/spotify/liked-songs" class="service-link">
+                            <i class="fas fa-heart"></i> Liked Songs
+                        </a>
+                        <a href="/spotify/playlists" class="service-link">
+                            <i class="fas fa-list"></i> Playlists
+                        </a>
+                    </div>
+
+                    <form class="input-group" onsubmit="event.preventDefault(); window.open('/spotify/playlists/' + document.getElementById('spotify_playlist_id').value + '/tracks', '_blank');">
+                        <label for="spotify_playlist_id">Explore Playlist</label>
+                        <input type="text" id="spotify_playlist_id" name="spotify_playlist_id" placeholder="Enter playlist ID">
+                        <button type="submit"><i class="fas fa-external-link-alt"></i></button>
+                </form>
+                </div>
+            </div>
+            
+            <!-- Deezer Card -->
+            <div class="service-card deezer">
+                <div class="service-header">
+                    <div class="service-title">
+                        <i class="fab fa-deezer"></i>
+                        <h3>Deezer</h3>
+                    </div>
+                    <div class="service-status" id="deezer-status"></div>
+                </div>
+                
+                <div class="service-actions">
+                    <a href="/auth/deezer/login" class="service-button primary">
+                        <i class="fas fa-sign-in-alt"></i> Connect Deezer
+                    </a>
+                    
+                    <div class="service-links">
+                        <a href="/me/deezer" class="service-link">
+                            <i class="fas fa-user"></i> Profile
+                        </a>
+                        <a href="/deezer/liked-songs" class="service-link">
+                            <i class="fas fa-heart"></i> Liked Songs
+                        </a>
+                        <a href="/deezer/playlists" class="service-link">
+                            <i class="fas fa-list"></i> Playlists
+                        </a>
+    </div>
+    
+                    <form class="input-group" onsubmit="event.preventDefault(); window.open('/deezer/playlists/' + document.getElementById('deezer_playlist_id').value + '/tracks', '_blank');">
+                        <label for="deezer_playlist_id">Explore Playlist</label>
+                        <input type="text" id="deezer_playlist_id" name="deezer_playlist_id" placeholder="Enter playlist ID">
+                        <button type="submit"><i class="fas fa-external-link-alt"></i></button>
+                </form>
+                </div>
+            </div>
+            
+            <!-- YouTube Card -->
+            <div class="service-card youtube">
+                <div class="service-header">
+                    <div class="service-title">
+                        <i class="fab fa-youtube"></i>
+                        <h3>YouTube Music</h3>
+                    </div>
+                    <div class="service-status" id="youtube-status"></div>
+    </div>
+
+                <div class="service-actions">
+                    <a href="/auth/youtube/login" class="service-button primary">
+                        <i class="fas fa-sign-in-alt"></i> Connect YouTube
+                    </a>
+                    
+                    <div class="service-links">
+                        <a href="/me/youtube" class="service-link">
+                            <i class="fas fa-user"></i> Profile
+                        </a>
+                        <a href="/youtube/liked-videos" class="service-link">
+                            <i class="fas fa-heart"></i> Liked Videos
+                        </a>
+                        <a href="/youtube/playlists" class="service-link">
+                            <i class="fas fa-list"></i> Playlists
+                        </a>
+                    </div>
+
+                    <form class="input-group" onsubmit="event.preventDefault(); window.open('/youtube/playlists/' + document.getElementById('youtube_playlist_id').value + '/items', '_blank');">
+                        <label for="youtube_playlist_id">Explore Playlist</label>
+                        <input type="text" id="youtube_playlist_id" name="youtube_playlist_id" placeholder="Enter playlist ID">
+                        <button type="submit"><i class="fas fa-external-link-alt"></i></button>
+                </form>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="service-section">
-        <h2>Spotify</h2>
-        <ul>
-            <li><a href="/login/spotify" class="button">Login with Spotify</a></li>
-            <li><a href="/me/spotify">View Spotify Profile</a> (requires login)</li>
-            <li><a href="/spotify/liked-songs" target="_blank">View Liked Songs (JSON)</a> (requires login)</li>
-            <li><a href="/spotify/playlists" target="_blank">View Playlists (JSON)</a> (requires login)</li>
-            <li>
-                <form onsubmit="event.preventDefault(); window.open('/spotify/playlists/' + document.getElementById('spotify_playlist_id').value + '/tracks', '_blank');">
-                    <label for="spotify_playlist_id">View Tracks for Playlist ID:</label>
-                    <input type="text" id="spotify_playlist_id" name="spotify_playlist_id" placeholder="Enter Spotify Playlist ID">
-                    <button type="submit">View Tracks (JSON)</button>
-                </form>
-            </li>
-        </ul>
-    </div>
-    
-    <div class="service-section">
-        <h2>Deezer</h2>
-        <ul>
-            <li><a href="/login/deezer" class="button">Login with Deezer</a></li>
-            <li><a href="/me/deezer">View Deezer Profile</a> (requires login)</li>
-            <li><a href="/deezer/liked-songs" target="_blank">View Liked Songs (JSON)</a> (requires login)</li>
-            <li><a href="/deezer/playlists" target="_blank">View Playlists (JSON)</a> (requires login)</li>
-            <li>
-                <form onsubmit="event.preventDefault(); window.open('/deezer/playlists/' + document.getElementById('deezer_playlist_id').value + '/tracks', '_blank');">
-                    <label for="deezer_playlist_id">View Tracks for Playlist ID:</label>
-                    <input type="text" id="deezer_playlist_id" name="deezer_playlist_id" placeholder="Enter Deezer Playlist ID">
-                    <button type="submit">View Tracks (JSON)</button>
-                </form>
-            </li>
-        </ul>
-    </div>
-
-    <div class="service-section">
-        <h2>YouTube Music (Google)</h2>
-        <ul>
-            <li><a href="/login/youtube" class="button">Login with YouTube</a></li>
-            <li><a href="/me/youtube">View YouTube Profile</a> (requires login)</li>
-            <li><a href="/youtube/liked-videos" target="_blank">View Liked Videos (JSON)</a> (requires login)</li>
-            <li><a href="/youtube/playlists" target="_blank">View Playlists (JSON)</a> (requires login)</li>
-            <li>
-                <form onsubmit="event.preventDefault(); window.open('/youtube/playlists/' + document.getElementById('youtube_playlist_id').value + '/items', '_blank');">
-                    <label for="youtube_playlist_id">View Items for Playlist ID:</label>
-                    <input type="text" id="youtube_playlist_id" name="youtube_playlist_id" placeholder="Enter YouTube Playlist ID">
-                    <button type="submit">View Items (JSON)</button>
-                </form>
-            </li>
-        </ul>
-    </div>
-
+    <script>
+        // Add ripple effect to sync button
+        document.querySelector('.sync-button').addEventListener('click', function(e) {
+            let ripple = document.createElement('span');
+            ripple.classList.add('ripple');
+            this.appendChild(ripple);
+            
+            let x = e.clientX - e.target.offsetLeft;
+            let y = e.clientY - e.target.offsetTop;
+            
+            ripple.style.left = `${x}px`;
+            ripple.style.top = `${y}px`;
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+        
+        // Check authentication status
+        async function checkAuthStatus() {
+            try {
+                // Check Spotify
+                const spotifyResp = await fetch('/spotify/liked-songs');
+                document.getElementById('spotify-status').classList.toggle('connected', spotifyResp.ok);
+                
+                // Check Deezer
+                const deezerResp = await fetch('/deezer/liked-songs');
+                document.getElementById('deezer-status').classList.toggle('connected', deezerResp.ok);
+                
+                // Check YouTube
+                const youtubeResp = await fetch('/youtube/liked-videos');
+                document.getElementById('youtube-status').classList.toggle('connected', youtubeResp.ok);
+            } catch (error) {
+                console.error('Error checking auth status:', error);
+            }
+        }
+        
+        // Check auth status on page load
+        checkAuthStatus();
+        
+        // Recheck after any htmx request completes
+        document.body.addEventListener('htmx:afterRequest', checkAuthStatus);
+    </script>
 </body>
 </html>

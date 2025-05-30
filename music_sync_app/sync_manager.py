@@ -67,11 +67,154 @@ def find_song_on_youtube(youtube_service, title: str, artist: str = None) -> str
     except HttpError as e: print(f"YouTube API error in find_song_on_youtube: {e}")
     return None
 
-# --- Liked Songs Synchronization Logic (from previous step, condensed for brevity) ---
+# --- Liked Songs Synchronization Logic ---
 def sync_liked_songs(sp_client: spotipy.Spotify, deezer_access_token: str, youtube_service):
-    # ... (implementation from previous step, ensuring normalize_text is used correctly) ...
-    # This function is not directly used by sync_playlists_analyze but shares normalization logic
-    pass 
+    """
+    Analyzes liked songs across Spotify, Deezer, and YouTube.
+    Returns proposed actions for synchronizing liked songs.
+    """
+    results = {
+        "missing_on_spotify": [],
+        "missing_on_deezer": [],
+        "missing_on_youtube": [],
+        "errors": []
+    }
+    
+    all_services_data = {}
+    
+    # A. Fetch liked songs from each service
+    print("Fetching liked songs from Spotify...")
+    try:
+        spotify_liked = sp_client_module.get_liked_songs(sp_client)
+        all_services_data["spotify"] = spotify_liked
+        print(f"Fetched {len(spotify_liked)} liked songs from Spotify.")
+    except Exception as e:
+        results["errors"].append({"message": f"Error fetching Spotify liked songs: {str(e)}", "service": "spotify"})
+        all_services_data["spotify"] = []
+    
+    print("Fetching liked songs from Deezer...")
+    try:
+        deezer_liked = dz_client_module.get_liked_songs(deezer_access_token)
+        all_services_data["deezer"] = deezer_liked
+        print(f"Fetched {len(deezer_liked)} liked songs from Deezer.")
+    except Exception as e:
+        results["errors"].append({"message": f"Error fetching Deezer liked songs: {str(e)}", "service": "deezer"})
+        all_services_data["deezer"] = []
+    
+    print("Fetching liked videos from YouTube...")
+    try:
+        youtube_liked = yt_client_module.get_liked_videos(youtube_service)
+        all_services_data["youtube"] = youtube_liked
+        print(f"Fetched {len(youtube_liked)} liked videos from YouTube.")
+    except Exception as e:
+        results["errors"].append({"message": f"Error fetching YouTube liked videos: {str(e)}", "service": "youtube"})
+        all_services_data["youtube"] = []
+    
+    # B. Normalize and create track sets for comparison
+    service_track_sets = {}
+    track_metadata = {}  # Store original track info for each normalized identifier
+    
+    for service_name, tracks in all_services_data.items():
+        current_set = set()
+        for track_item in tracks:
+            if not track_item:
+                continue
+                
+            # Extract track information based on service
+            if service_name == "spotify":
+                title = track_item.get('name', '')
+                artist = track_item.get('artists', [{}])[0].get('name', '') if track_item.get('artists') else ''
+                isrc = track_item.get('external_ids', {}).get('isrc')
+            elif service_name == "deezer":
+                title = track_item.get('title', '')
+                artist = track_item.get('artist', {}).get('name', '')
+                isrc = track_item.get('isrc')
+            elif service_name == "youtube":
+                # YouTube liked videos - extract from snippet
+                snippet = track_item.get('snippet', {})
+                raw_title = snippet.get('title', '')
+                raw_artist_channel = snippet.get('videoOwnerChannelTitle', '') or snippet.get('channelTitle', '')
+                
+                # Parse artist and title from YouTube video title
+                parsed_artist = None
+                title_to_normalize = raw_title
+                
+                if ' - ' in raw_title:
+                    parts = raw_title.split(' - ', 1)
+                    # Simple heuristic: if channel seems like a label, artist might be in title
+                    if any(generic in raw_artist_channel.lower() for generic in ["vevo", "topic", "official", "records", "music"]):
+                        parsed_artist = parts[0]
+                        title_to_normalize = parts[1]
+                    else:
+                        parsed_artist = parts[0]
+                        title_to_normalize = parts[1]
+                else:
+                    # If channel title seems like an artist name (not generic)
+                    if not any(generic in raw_artist_channel.lower() for generic in ["vevo", "topic", "official", "records", "music"]) and len(raw_artist_channel) < 35:
+                        parsed_artist = raw_artist_channel
+                
+                title = title_to_normalize
+                artist = parsed_artist if parsed_artist else raw_artist_channel
+                isrc = None  # YouTube doesn't provide ISRC directly
+            else:
+                continue
+            
+            # Create normalized identifier
+            normalized_title = normalize_text(title)
+            normalized_artist = normalize_text(artist)
+            
+            # Use ISRC as primary identifier if available, otherwise use normalized title+artist
+            if isrc:
+                primary_id = isrc
+            elif normalized_title and normalized_artist:
+                primary_id = (normalized_title, normalized_artist)
+            elif normalized_title:
+                primary_id = (normalized_title, '')
+            else:
+                continue  # Skip if we can't identify the track
+            
+            current_set.add(primary_id)
+            
+            # Store metadata for this track (keep first occurrence)
+            if primary_id not in track_metadata:
+                track_metadata[primary_id] = {
+                    "title": title,
+                    "artist": artist,
+                    "isrc": isrc,
+                    "source_service": service_name,
+                    "identifier_used": primary_id
+                }
+        
+        service_track_sets[service_name] = current_set
+        print(f"Normalized {len(current_set)} unique tracks from {service_name}")
+    
+    # C. Find missing tracks for each service
+    all_track_ids = set()
+    for track_set in service_track_sets.values():
+        all_track_ids.update(track_set)
+    
+    print(f"Total unique tracks across all services: {len(all_track_ids)}")
+    
+    # Find what's missing on each service
+    for service_name in ["spotify", "deezer", "youtube"]:
+        if service_name not in service_track_sets:
+            continue
+            
+        service_tracks = service_track_sets[service_name]
+        missing_tracks = all_track_ids - service_tracks
+        
+        missing_list = []
+        for track_id in missing_tracks:
+            if track_id in track_metadata:
+                track_info = track_metadata[track_id]
+                # Don't suggest adding a track from the same service to itself
+                if track_info["source_service"] != service_name:
+                    missing_list.append(track_info)
+        
+        results[f"missing_on_{service_name}"] = missing_list
+        print(f"Found {len(missing_list)} tracks missing on {service_name}")
+    
+    return results
 
 # --- Playlist Synchronization Logic ---
 def _get_track_primary_id(track_info: dict, service_name: str):

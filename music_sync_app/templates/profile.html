@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ service_name }} Profile - Music Sync Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --dark-bg: #0a0a0f;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --text-primary: #ffffff;
+            --text-secondary: #a8a8b3;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --spotify-green: #1DB954;
+            --deezer-orange: #FF6D00;
+            --youtube-red: #FF0000;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(240, 147, 251, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(79, 172, 254, 0.1) 0%, transparent 50%);
+            background-attachment: fixed;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20% 30%, white, transparent),
+                radial-gradient(2px 2px at 60% 70%, white, transparent),
+                radial-gradient(1px 1px at 50% 50%, white, transparent);
+            background-size: 200px 200px;
+            background-repeat: repeat;
+            opacity: 0.02;
+            animation: stars 200s linear infinite;
+            z-index: -1;
+        }
+        
+        @keyframes stars {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-100px, -100px); }
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .nav-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            padding: 20px 0;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+        }
+        
+        .back-link:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(-5px);
+        }
+        
+        .service-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: var(--glass-bg);
+            border: 1px solid;
+        }
+        
+        .service-indicator.spotify { border-color: var(--spotify-green); }
+        .service-indicator.deezer { border-color: var(--deezer-orange); }
+        .service-indicator.youtube { border-color: var(--youtube-red); }
+        
+        .service-indicator i { font-size: 1.2rem; }
+        .spotify .service-indicator i { color: var(--spotify-green); }
+        .deezer .service-indicator i { color: var(--deezer-orange); }
+        .youtube .service-indicator i { color: var(--youtube-red); }
+        
+        .profile-header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 0.8s ease;
+        }
+        
+        .profile-header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .profile-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            padding: 40px;
+            margin-bottom: 30px;
+            animation: fadeInUp 0.8s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .profile-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+        
+        .spotify .profile-card::before { background: var(--spotify-green); }
+        .deezer .profile-card::before { background: var(--deezer-orange); }
+        .youtube .profile-card::before { background: var(--youtube-red); }
+        
+        .profile-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            margin: 0 auto 30px;
+            display: block;
+            border: 4px solid;
+            animation: glow 3s ease-in-out infinite alternate;
+        }
+        
+        .spotify .profile-image { border-color: var(--spotify-green); }
+        .deezer .profile-image { border-color: var(--deezer-orange); }
+        .youtube .profile-image { border-color: var(--youtube-red); }
+        
+        @keyframes glow {
+            from { box-shadow: 0 0 20px rgba(79, 172, 254, 0.5); }
+            to { box-shadow: 0 0 30px rgba(240, 147, 251, 0.8); }
+        }
+        
+        .profile-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .info-item {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .info-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-2px);
+        }
+        
+        .info-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .info-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .raw-data {
+            margin-top: 40px;
+        }
+        
+        .raw-data-toggle {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .raw-data-toggle:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+        
+        .raw-data-content {
+            display: none;
+            margin-top: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+        
+        .raw-data-content.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .raw-data-content pre {
+            margin: 0;
+            color: var(--text-secondary);
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .profile-header h1 {
+                font-size: 2rem;
+            }
+            
+            .profile-card {
+                padding: 25px;
+            }
+            
+            .profile-info {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body class="{{ service_name.lower() }}">
+    <div class="container">
+        <nav class="nav-header">
+            <a href="/" class="back-link">
+                <i class="fas fa-arrow-left"></i>
+                Back to Home
+            </a>
+            <div class="service-indicator {{ service_name.lower() }}">
+                <i class="fab fa-{{ service_name.lower() }}"></i>
+                <span>{{ service_name }}</span>
+            </div>
+        </nav>
+        
+        <div class="profile-header">
+            <h1>{{ user_data.display_name | default(user_data.name, true) | default('User Profile', true) }}</h1>
+        </div>
+        
+        <div class="profile-card">
+            {% if user_data.images and user_data.images[0].url %}
+                <img src="{{ user_data.images[0].url }}" alt="Profile" class="profile-image">
+            {% elif user_data.picture %}
+                <img src="{{ user_data.picture }}" alt="Profile" class="profile-image">
+            {% elif user_data.picture_xl %}
+                <img src="{{ user_data.picture_xl }}" alt="Profile" class="profile-image">
+            {% else %}
+                <div style="width: 150px; height: 150px; margin: 0 auto 30px; background: var(--glass-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 4px solid var(--glass-border);">
+                    <i class="fas fa-user" style="font-size: 3rem; color: var(--text-secondary);"></i>
+                </div>
+            {% endif %}
+            
+            <div class="profile-info">
+                {% if user_data.email %}
+                <div class="info-item">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">{{ user_data.email }}</div>
+                </div>
+                {% endif %}
+                
+                {% if user_data.id %}
+                <div class="info-item">
+                    <div class="info-label">User ID</div>
+                    <div class="info-value">{{ user_data.id }}</div>
+                </div>
+                {% endif %}
+                
+                {% if user_data.country %}
+                <div class="info-item">
+                    <div class="info-label">Country</div>
+                    <div class="info-value">{{ user_data.country }}</div>
+                </div>
+                {% endif %}
+                
+                {% if user_data.product %}
+                <div class="info-item">
+                    <div class="info-label">Subscription</div>
+                    <div class="info-value">{{ user_data.product | capitalize }}</div>
+                </div>
+                {% endif %}
+                
+                {% if user_data.followers %}
+                <div class="info-item">
+                    <div class="info-label">Followers</div>
+                    <div class="info-value">{{ user_data.followers.total | default(user_data.followers, true) }}</div>
+                </div>
+                {% endif %}
+                
+                {% if service_name == 'YouTube' and user_data.items %}
+                <div class="info-item">
+                    <div class="info-label">Channel</div>
+                    <div class="info-value">{{ user_data.items[0].snippet.title }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="raw-data">
+            <button class="raw-data-toggle" onclick="toggleRawData()">
+                <i class="fas fa-code"></i>
+                View Raw Data
+            </button>
+            <div class="raw-data-content" id="rawData">
+                <pre>{{ user_data | tojson(indent=2) }}</pre>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function toggleRawData() {
+            const rawData = document.getElementById('rawData');
+            rawData.classList.toggle('show');
+        }
+    </script>
+</body>
+</html> 
