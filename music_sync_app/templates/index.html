@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Music Sync App</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px auto; max-width: 1000px; background-color: #f4f4f4; color: #333; line-height: 1.6; }
+        h1, h2, h3, h4 { border-bottom: 1px solid #ccc; padding-bottom: 5px; color: #333; }
+        h1 { text-align: center; margin-bottom: 30px; }
+        ul { list-style: none; padding-left: 0; }
+        li { margin-bottom: 8px; }
+        a { text-decoration: none; color: #007bff; }
+        a:hover { text-decoration: underline; }
+        .service-section, .sync-section { margin-bottom: 25px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        input[type="text"] { padding: 8px; margin-right: 5px; border: 1px solid #ccc; border-radius: 3px; box-sizing: border-box; width: calc(100% - 130px); }
+        button, .button {
+            padding: 9px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: inline-block;
+            text-align: center;
+            margin-top: 5px;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        button:hover, .button:hover { background-color: #0056b3; }
+        .sync-section h2 { color: #343a40; border-bottom-color: #343a40;}
+        .sync-section button { background-color: #5cb85c; } /* Green for analyze */
+        .sync-section button:hover { background-color: #4cae4c; }
+
+        #sync-results, #playlist-sync-results, .items-display-target { margin-top: 15px; padding: 10px; background-color: #f9f9f9; border: 1px solid #eee; border-radius: 4px; min-height: 30px; }
+        label { display: block; margin-bottom: 4px; font-weight: bold; font-size: 0.9em; }
+        .htmx-indicator { margin-left: 10px; font-style: italic; font-size: 0.9em; }
+        .data-view-controls button { background-color: #6c757d; font-size: 0.9em; padding: 6px 10px;}
+        .data-view-controls button:hover { background-color: #5a6268; }
+        .form-inline { display: flex; align-items: center; margin-top:10px;}
+        .form-inline label { margin-right: 10px; margin-bottom:0;}
+        .form-inline input[type="text"] { width: auto; flex-grow: 1; }
+        .form-inline button { width: auto; }
+    </style>
+    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+</head>
+<body>
+    <h1>Music Sync Dashboard</h1>
+
+    <div class="sync-section">
+        <h2>Liked Songs Synchronization</h2>
+        <button hx-post="/sync/liked/analyze" hx-target="#sync-results" hx-indicator="#liked-loading-indicator">
+            Analyze Liked Songs Differences
+        </button>
+        <span id="liked-loading-indicator" class="htmx-indicator"> Analyzing...</span>
+        <div id="sync-results">
+            <p>Click 'Analyze' to see proposed sync actions for your liked songs.</p>
+        </div>
+    </div>
+
+    <div class="sync-section">
+        <h2>Playlist Synchronization</h2>
+        <button hx-post="/sync/playlists/analyze" hx-target="#playlist-sync-results" hx-indicator="#playlist-loading-indicator">
+            Analyze Playlist Differences
+        </button>
+        <span id="playlist-loading-indicator" class="htmx-indicator"> Analyzing...</span>
+        <div id="playlist-sync-results">
+            <p>Click 'Analyze' to see proposed playlist creations and track additions.</p>
+        </div>
+    </div>
+
+    {% for service in [("Spotify", "spotify"), ("Deezer", "deezer"), ("YouTube", "youtube")] %}
+    <div class="service-section">
+        <h3>{{ service[0] }}
+            <small style="font-weight:normal; font-size:0.8em;">
+                (<a href="/me/{{ service[1].lower() }}" target="_blank">View Profile JSON</a> |
+                 <a href="/me_display_page/{{ service[1].lower() }}" hx-get="/me_display_page/{{ service[1].lower() }}" hx-target="#{{service[1]}}-me-display" hx-swap="innerHTML" hx-indicator="#{{service[1]}}-ui-loading">View Profile UI</a>)
+            </small>
+        </h3>
+        <div id="{{service[1]}}-me-display" class="items-display-target" style="margin-bottom:15px;"></div>
+
+        <a href="/login/{{ service[1].lower() }}" class="button">Login to {{ service[0] }}</a>
+
+        <div class="data-view-controls" style="margin-top:15px;">
+            <h4>View Library Data (via UI Partials):</h4>
+            <button hx-get="/{{ service[1].lower() }}/ui/liked-{{ 'videos' if service[0] == 'YouTube' else 'songs' }}"
+                    hx-target="#{{service[1]}}-liked-display"
+                    hx-indicator="#{{service[1]}}-ui-loading">
+                View Liked {{ 'Videos' if service[0] == 'YouTube' else 'Songs' }}
+            </button>
+            <button hx-get="/{{ service[1].lower() }}/ui/playlists"
+                    hx-target="#{{service[1]}}-playlists-display"
+                    hx-indicator="#{{service[1]}}-ui-loading">
+                View Playlists
+            </button>
+            <span id="{{service[1]}}-ui-loading" class="htmx-indicator">Loading data...</span>
+        </div>
+        <div id="{{service[1]}}-liked-display" class="items-display-target"></div>
+        <div id="{{service[1]}}-playlists-display" class="items-display-target"></div>
+
+        <div class="form-inline" style="margin-top:15px;">
+            <label for="{{service[1]}}_playlist_id">Playlist Tracks (JSON):</label>
+            <input type="text" id="{{service[1]}}_playlist_id" name="{{service[1]}}_playlist_id" placeholder="{{service[0]}} Playlist ID">
+            <button onclick="window.open('/{{ service[1].lower() }}/playlists/' + document.getElementById('{{service[1]}}_playlist_id').value + '/{{ 'items' if service[0] == 'YouTube' else 'tracks' }}', '_blank');">View Tracks</button>
+        </div>
+    </div>
+    {% endfor %}
+
+</body>
+</html>

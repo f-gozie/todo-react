@@ -1,0 +1,108 @@
+<div id="sync-actions-container">
+    {% if auth_error_services %}
+        <div class="error-message">
+            <h4>Authentication Required for Analysis</h4>
+            <p>Please log in to the following services to analyze liked song differences:</p>
+            <ul>
+                {% for service_name in auth_error_services %}
+                    <li>{{ service_name }} - <a href="/login/{{ service_name.lower() }}" target="_blank">Login</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% elif analysis_error %}
+        <div class="error-message">
+            <h4>Analysis Error</h4>
+            <p>{{ analysis_error }}</p>
+        </div>
+    {% elif proposed_actions %}
+        <h3>Proposed Synchronization Actions for Liked Songs:</h3>
+
+        {% if proposed_actions.errors and proposed_actions.errors | length > 0 %}
+            <div class="error-message">
+                <h4>Encountered {{ proposed_actions.errors | length }} Errors During Analysis:</h4>
+                <ul>
+                    {% for error in proposed_actions.errors %}
+                        <li>{{ error.message }} - ID: {{ error.id if error.id else 'N/A' }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        {% for service_key, items in proposed_actions.items() %}
+            {% if service_key.startswith("missing_on_") and items %}
+                {% set target_service_name_lower = service_key.split("missing_on_")[1] %}
+                {% set target_service_name_capitalized = target_service_name_lower | capitalize %}
+                <div class="service-sync-section">
+                    <h4>Songs to potentially add to {{ target_service_name_capitalized }}: ({{ items | length }})</h4>
+                    <ul>
+                        {% for song in items[:20] %} {# Displaying top 20 for brevity #}
+                            {% set unique_id = loop.index ~ "_" ~ target_service_name_lower ~ "_" ~ (song.isrc if song.isrc else (song.title | slugify)) %}
+                            <li>
+                                <strong>{{ song.title }}</strong> by {{ song.artist if song.artist else "Unknown Artist" }}
+                                <br>
+                                <small>
+                                    (Source: {{ song.source_service }})
+                                    {% if song.isrc %}(ISRC: {{ song.isrc }}){% else %}(Identifier: {{ song.identifier_used | string }}){% endif %}
+                                    <button class="action-button"
+                                            hx-post="/sync/liked/add"
+                                            hx-vals='{
+                                                "isrc": "{{ song.isrc if song.isrc else "" }}",
+                                                "title": "{{ song.title }}",
+                                                "artist": "{{ song.artist if song.artist else "" }}",
+                                                "target_service": "{{ target_service_name_lower }}"
+                                            }'
+                                            hx-target="#status_{{ unique_id }}"
+                                            hx-swap="innerHTML">
+                                        Add to {{ target_service_name_capitalized }}
+                                    </button>
+                                    <span id="status_{{ unique_id }}" class="action-status"></span>
+                                </small>
+                            </li>
+                        {% endfor %}
+                        {% if items | length > 20 %}
+                            <li>And {{ (items | length) - 20 }} more...</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% elif service_key.startswith("missing_on_") and not items %}
+                 <div class="service-sync-section">
+                    <h4>{{ service_key.split("missing_on_")[1] | capitalize }} is up to date with liked songs from other analyzed services.</h4>
+                </div>
+            {% endif %}
+        {% endfor %}
+
+        {% set found_missing_actions = false %}
+        {% for service_key, items in proposed_actions.items() %}
+            {% if service_key.startswith("missing_on_") and items %}{% set found_missing_actions = true %}{% endif %}
+        {% endfor %}
+        {% if not found_missing_actions and (not proposed_actions.errors or proposed_actions.errors | length == 0) %}
+            <p>All services appear to be synchronized based on the current analysis scope!</p>
+        {% endif %}
+
+    {% else %}
+        <p>No proposed actions or an unexpected error occurred. Ensure all services are logged in and try analyzing again.</p>
+    {% endif %}
+</div>
+
+<style>
+    .service-sync-section { margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9; }
+    .service-sync-section h4 { margin-top: 0; }
+    .service-sync-section ul { list-style-type: none; padding-left: 0; }
+    .service-sync-section li { padding: 8px 5px; border-bottom: 1px dashed #eee; }
+    .service-sync-section li:last-child { border-bottom: none; }
+    .error-message { color: #D8000C; background-color: #FFD2D2; padding: 10px; margin-bottom:10px; border-radius: 3px; }
+    .action-button {
+        margin-left: 10px;
+        padding: 3px 8px;
+        font-size: 0.9em;
+        background-color: #28a745; /* Green */
+        color: white;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+    }
+    .action-button:hover { background-color: #218838; }
+    .action-status { margin-left: 5px; font-style: italic; font-size: 0.9em; }
+    .action-status[style*="color:red"] { font-weight: bold; }
+    .action-status[style*="color:green"] { font-weight: bold; }
+</style>
