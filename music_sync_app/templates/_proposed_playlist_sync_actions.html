@@ -1,0 +1,148 @@
+<div id="playlist-sync-actions-container">
+    {% if auth_error_services %}
+        <div class="error-message">
+            <h4>Authentication Required for Playlist Analysis</h4>
+            <p>Please log in to the following services to analyze playlist differences:</p>
+            <ul>
+                {% for service_name in auth_error_services %}
+                    <li>{{ service_name }} - <a href="/login/{{ service_name.lower() }}" target="_blank">Login</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% elif analysis_error %}
+        <div class="error-message">
+            <h4>Playlist Analysis Error</h4>
+            <p>{{ analysis_error }}</p>
+        </div>
+    {% elif proposed_actions %}
+        <h3>Proposed Playlist Synchronization Actions:</h3>
+
+        {% if proposed_actions.errors and proposed_actions.errors | length > 0 %}
+            <div class="error-message">
+                <h4>Encountered {{ proposed_actions.errors | length }} Errors During Playlist Analysis:</h4>
+                <ul>
+                    {% for error in proposed_actions.errors[:10] %} {# Limit display for brevity #}
+                        <li>
+                            Service: {{ error.service if error.service else 'N/A' }} |
+                            Action: {{ error.action if error.action else 'N/A' }} |
+                            {% if error.playlist_name %}Playlist: {{error.playlist_name}} | {% endif %}
+                            Error: {{ error.error if error.error else 'Unknown error' }}
+                        </li>
+                    {% endfor %}
+                    {% if proposed_actions.errors | length > 10 %}
+                        <li>And {{ (proposed_actions.errors | length) - 10 }} more errors (check server logs).</li>
+                    {% endif %}
+                </ul>
+            </div>
+        {% endif %}
+
+        {# Proposed Playlist Creations #}
+        {% if proposed_actions.playlist_creations and proposed_actions.playlist_creations | length > 0 %}
+            <div class="sync-category-section">
+                <h4>Proposed Playlist Creations ({{ proposed_actions.playlist_creations | length }}):</h4>
+                <ul>
+                    {% for creation in proposed_actions.playlist_creations[:15] %} {# Limit display #}
+                    {% set unique_id = "pl_create_" ~ loop.index ~ "_" ~ creation.target_service %}
+                    <li>
+                        Create playlist <strong>'{{ creation.playlist_name_original }}'</strong> on {{ creation.target_service | capitalize }}.
+                        <br>
+                        <small>
+                            (Normalized as: '{{ creation.playlist_name_normalized }}'. Example from: {{ creation.source_example_service | capitalize }})
+                            <button class="action-button create-playlist-btn"
+                                    hx-post="/sync/playlist/create"
+                                    hx-vals='{"target_service": "{{ creation.target_service }}", "playlist_name": "{{ creation.playlist_name_original }}"}'
+                                    hx-target="#status_{{ unique_id }}"
+                                    hx-swap="innerHTML">
+                                Create on {{ creation.target_service | capitalize }}
+                            </button>
+                            <span id="status_{{ unique_id }}" class="action-status"></span>
+                        </small>
+                    </li>
+                    {% endfor %}
+                    {% if proposed_actions.playlist_creations | length > 15 %}
+                        <li>And {{ (proposed_actions.playlist_creations | length) - 15 }} more playlist creation proposals...</li>
+                    {% endif %}
+                </ul>
+            </div>
+        {% else %}
+            {% if not (proposed_actions.errors and proposed_actions.errors | length > 0) %}
+            <p>No new playlists proposed for creation based on names.</p>
+            {% endif %}
+        {% endif %}
+
+        {# Proposed Track Additions #}
+        {% if proposed_actions.track_additions and proposed_actions.track_additions | length > 0 %}
+            <div class="sync-category-section">
+                <h4>Proposed Track Additions to Existing Playlists ({{ proposed_actions.track_additions | length }}):</h4>
+                {% set displayed_tracks_count = 0 %}
+                <ul>
+                {% for addition in proposed_actions.track_additions %}
+                    {% if displayed_tracks_count < 30 %}
+                        {% set unique_track_id = "track_add_" ~ loop.index ~ "_" ~ addition.target_service ~ "_" ~ (addition.target_playlist_id | slugify) %}
+                        <li>
+                            Add track <strong>'{{ addition.track_title }}'</strong> by '{{ addition.track_artist if addition.track_artist else "N/A" }}'
+                            to playlist '{{ addition.playlist_name_original }}' on {{ addition.target_service | capitalize }}.
+                            <br>
+                            <small>
+                                (Source of track: {{ addition.source_service_of_track | capitalize }})
+                                {% if addition.track_isrc %}(ISRC: {{ addition.track_isrc }}){% elif addition.identifier_used %}(Identifier: {{ addition.identifier_used | string }}){% endif %}
+                                <button class="action-button add-track-btn"
+                                        hx-post="/sync/playlist/add_track"
+                                        hx-vals='{
+                                            "target_service": "{{ addition.target_service }}",
+                                            "target_playlist_id": "{{ addition.target_playlist_id }}",
+                                            "track_title": "{{ addition.track_title }}",
+                                            "track_artist": "{{ addition.track_artist if addition.track_artist else "" }}",
+                                            "track_isrc": "{{ addition.track_isrc if addition.track_isrc else "" }}"
+                                        }'
+                                        hx-target="#status_{{ unique_track_id }}"
+                                        hx-swap="innerHTML">
+                                    Add to {{ addition.target_service | capitalize }} Playlist
+                                </button>
+                                <span id="status_{{ unique_track_id }}" class="action-status"></span>
+                            </small>
+                        </li>
+                        {% set displayed_tracks_count = displayed_tracks_count + 1 %}
+                    {% endif %}
+                {% endfor %}
+                </ul>
+                {% if (proposed_actions.track_additions | length) > displayed_tracks_count %}
+                    <p>And {{ (proposed_actions.track_additions | length) - displayed_tracks_count }} more track addition proposals...</p>
+                {% endif %}
+            </div>
+        {% else %}
+             {% if not (proposed_actions.errors and proposed_actions.errors | length > 0) %}
+            <p>No tracks proposed for addition to existing playlists.</p>
+            {% endif %}
+        {% endif %}
+
+        {% if (not proposed_actions.playlist_creations or proposed_actions.playlist_creations | length == 0) and
+              (not proposed_actions.track_additions or proposed_actions.track_additions | length == 0) and
+              (not proposed_actions.errors or proposed_actions.errors | length == 0) %}
+            <p>Playlists appear to be synchronized across all analyzed services!</p>
+        {% endif %}
+
+    {% else %}
+        <p>No proposed playlist actions or an unexpected error occurred. Ensure all services are logged in and try analyzing again.</p>
+    {% endif %}
+</div>
+
+<style>
+    .sync-category-section { margin-bottom: 15px; padding: 10px; border: 1px solid #cce5ff; border-radius: 4px; background-color: #f8f9fa; }
+    .sync-category-section h4 { margin-top: 0; color: #004085; }
+    .sync-category-section ul { list-style-type: none; padding-left: 0; }
+    .sync-category-section li { padding: 8px 5px; border-bottom: 1px dashed #eee; }
+    .sync-category-section li:last-child { border-bottom: none; }
+    .error-message { color: #D8000C; background-color: #FFD2D2; padding: 10px; margin-bottom:10px; border-radius: 3px; }
+    .action-button {
+        margin-left: 10px; padding: 3px 8px; font-size: 0.9em;
+        border: none; border-radius: 3px; cursor: pointer; color: white;
+    }
+    .create-playlist-btn { background-color: #17a2b8; } /* Teal */
+    .create-playlist-btn:hover { background-color: #138496; }
+    .add-track-btn { background-color: #28a745; } /* Green */
+    .add-track-btn:hover { background-color: #218838; }
+    .action-status { margin-left: 5px; font-style: italic; font-size: 0.9em; }
+    .action-status[style*="color:red"] { font-weight: bold; }
+    .action-status[style*="color:green"] { font-weight: bold; }
+</style>

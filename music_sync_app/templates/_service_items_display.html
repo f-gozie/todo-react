@@ -1,0 +1,57 @@
+<div class="items-display-container">
+    <h4>{{ title }}</h4>
+    {% if auth_error_message %}
+        <div class="error-message">
+            <p>{{ auth_error_message }} <a href="/login/{{ service_name_lower }}" target="_blank">Login to {{ service_name_capitalized }}</a></p>
+        </div>
+    {% elif items is not none and items | length > 0 %}
+        <ul class="items-list">
+            {% for item in items[:30] %}  {# Display up to 30 items initially #}
+                <li>
+                    {% if item_type == "track" %}
+                        <strong>{{ item.name if item.name else item.title if item.title else "Unknown Track" }}</strong>
+                        <br>
+                        <small>
+                            Artist: {{ item.artists[0].name if item.artists and item.artists[0] else item.artist.name if item.artist and item.artist.name else "Unknown Artist" }}
+                            {% if item.album and item.album.name %} | Album: {{ item.album.name }}{% endif %}
+                            {% if item.isrc %}| ISRC: {{ item.isrc }}{% elif item.external_ids and item.external_ids.isrc %}| ISRC: {{ item.external_ids.isrc }}{% endif %}
+                        </small>
+                    {% elif item_type == "video" %} {# For YouTube Liked Videos (PlaylistItems) #}
+                        <strong>{{ item.snippet.title if item.snippet else "Unknown Video" }}</strong>
+                        <br>
+                        <small>
+                            Channel: {{ item.snippet.videoOwnerChannelTitle if item.snippet and item.snippet.videoOwnerChannelTitle else item.snippet.channelTitle if item.snippet and item.snippet.channelTitle else "Unknown Channel" }}
+                            {% if item.contentDetails and item.contentDetails.videoId %} (Video ID: {{ item.contentDetails.videoId }}) {% endif %}
+                        </small>
+                    {% elif item_type == "playlist" %}
+                        <strong>{{ item.name if item.name else item.title if item.title else item.snippet.title if item.snippet else "Unknown Playlist" }}</strong>
+                        <br>
+                        <small>
+                            ID: {{ item.id }}
+                            {% if item.tracks and item.tracks.total is defined %} | Tracks: {{ item.tracks.total }}
+                            {% elif item.contentDetails and item.contentDetails.itemCount is defined %} | Items: {{ item.contentDetails.itemCount }}
+                            {% endif %}
+                        </small>
+                    {% else %}
+                        {{ item | string }} {# Fallback for unknown item structure #}
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+        {% if items | length > 30 %}
+            <p><small>Showing first 30 of {{ items | length }} items.</small></p>
+        {% endif %}
+    {% else %}
+        <p>No items found for "{{ title }}".</p>
+    {% endif %}
+</div>
+
+<style>
+    .items-display-container { margin-top: 10px; padding: 10px; background-color: #e9ecef; border-radius: 4px; }
+    .items-display-container h4 { margin-top: 0; margin-bottom: 8px; }
+    .items-list { list-style-type: none; padding-left: 0; margin-bottom: 0; }
+    .items-list li { padding: 6px 0; border-bottom: 1px solid #ced4da; font-size: 0.95em; }
+    .items-list li:last-child { border-bottom: none; }
+    .items-list li small { color: #495057; font-size: 0.9em; }
+    .error-message { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; padding: .75rem 1.25rem; margin-bottom: 1rem; border: 1px solid transparent; border-radius: .25rem; }
+</style>
