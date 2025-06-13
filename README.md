@@ -372,6 +372,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 - **Python**: Follow PEP 8, use type hints, 90%+ test coverage
 - **TypeScript**: Strict mode, ESLint + Prettier, comprehensive testing
+- **EditorConfig**: Consistent indentation and line endings via [.editorconfig](.editorconfig)
 - **Git**: Conventional commits, meaningful commit messages
 - **Documentation**: Update docs for any API changes
 
