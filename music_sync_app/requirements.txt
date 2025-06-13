@@ -1,0 +1,32 @@
+# Core Framework
+fastapi>=0.68.0,<1.0.0
+uvicorn[standard]>=0.15.0,<1.0.0
+
+# Template Engine
+jinja2>=3.0.0,<4.0.0
+
+# Music Service APIs
+spotipy>=2.19.0,<3.0.0
+
+# Google/YouTube API
+google-api-python-client>=2.0.0,<3.0.0
+google-auth-oauthlib>=0.4.6,<1.0.0
+google-auth-httplib2>=0.1.0,<1.0.0
+
+# HTTP Requests
+requests>=2.26.0,<3.0.0
+
+# Utilities
+python-multipart>=0.0.5,<1.0.0  # For form data in FastAPI
+python-dotenv>=0.21.0,<1.0.0  # For loading environment variables from .env
+
+# Optional: For better performance
+# redis>=4.0.0,<5.0.0  # For token storage in production
+# celery>=5.2.0,<6.0.0  # For background tasks
+
+# Development (uncomment for dev environment)
+# pytest>=6.2.0,<8.0.0
+# pytest-asyncio>=0.18.0,<1.0.0
+# black>=22.0.0,<24.0.0
+# flake8>=4.0.0,<6.0.0
+# mypy>=0.910,<2.0.0
