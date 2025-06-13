@@ -309,5 +309,5 @@ tasks/
 .roomodes
 .taskmasterconfig
 .windsurfrules
-.cursor
+# .cursor
 .roo
