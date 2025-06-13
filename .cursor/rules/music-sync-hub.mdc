@@ -1,0 +1,888 @@
+# Music Sync Hub Development Rules
+
+## **Application Architecture Overview**
+
+Music Sync Hub is a Docker-based music synchronization platform with:
+- **Backend**: FastAPI + Python 3.9+ with PostgreSQL, Redis, Celery
+- **Frontend**: React 18 + TypeScript with Vite, TailwindCSS, Redux Toolkit
+- **Music Integration**: Separate module for Spotify/YouTube sync
+- **Infrastructure**: Complete Docker development environment
+
+## **🐳 Docker-First Development**
+
+### **Critical: Always Use Docker**
+- **NEVER run Python/Node commands directly** - always use Docker containers
+- **NEVER install dependencies locally** - use containerized environments
+- Use `make` commands for all operations - they handle Docker orchestration
+
+### **Essential Docker Commands**
+```bash
+# ✅ DO: Start development environment
+make up
+
+# ✅ DO: View logs
+make logs
+make logs-backend
+make logs-frontend
+
+# ✅ DO: Access container shells
+make shell-backend
+make shell-frontend
+
+# ✅ DO: Run tests in containers
+make test
+make test-backend
+make test-frontend
+
+# ❌ DON'T: Run commands directly
+python -m pytest  # This will fail in our environment
+npm test          # This will fail in our environment
+```
+
+### **Development Workflow**
+```bash
+# 1. Start services
+make up
+
+# 2. Check health
+make health
+
+# 3. View logs during development
+make logs-backend  # or make logs-frontend
+
+# 4. Access database if needed
+make db-shell
+
+# 5. Run tests
+make test
+```
+
+## **🔧 Environment Setup**
+
+### **Required Files**
+- Copy `env.example` to `.env` and configure API keys
+- All services defined in `docker-compose.yml`
+- Production config in `docker-compose.prod.yml`
+
+### **Service URLs (Development)**
+- Backend API: `http://localhost:8000`
+- Frontend: `http://localhost:3000`
+- API Docs: `http://localhost:8000/docs`
+- Flower (Celery Monitor): `http://localhost:5555`
+
+## **🐍 Backend Development (FastAPI + Python)**
+
+### **File Structure Patterns**
+```
+backend/app/
+├── api/           # FastAPI routers
+├── core/          # App configuration, security, database
+├── db/            # Database utilities
+├── models/        # SQLAlchemy models
+├── repositories/  # Data access layer
+├── schemas/       # Pydantic schemas
+├── services/      # Business logic
+└── utils/         # Shared utilities
+```
+
+### **Code Quality Standards**
+```bash
+# ✅ DO: Always run linting/formatting in Docker
+make lint-fix      # Runs ruff + black
+make type-check    # Runs mypy
+make format        # Runs black
+
+# ❌ DON'T: Run tools directly
+black .           # Use Docker instead
+ruff check .      # Use Docker instead
+```
+
+### **Python Code Patterns**
+
+#### **FastAPI Route Structure**
+```python
+# ✅ DO: Use dependency injection and proper typing
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.deps import get_current_user, get_db
+from app.schemas.user import UserCreate, UserResponse
+from app.services.user_service import UserService
+
+router = APIRouter(prefix="/users", tags=["users"])
+
+@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def create_user(
+    user_data: UserCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> UserResponse:
+    """Create a new user."""
+    service = UserService(db)
+    return await service.create_user(user_data)
+```
+
+#### **SQLAlchemy Models**
+```python
+# ✅ DO: Use SQLAlchemy 2.0 async patterns
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import String, DateTime
+from datetime import datetime
+
+class Base(DeclarativeBase):
+    pass
+
+class User(Base):
+    __tablename__ = "users"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+```
+
+#### **Pydantic Schemas**
+```python
+# ✅ DO: Use Pydantic v2 patterns
+from pydantic import BaseModel, EmailStr, Field
+from datetime import datetime
+from typing import Optional
+
+class UserBase(BaseModel):
+    email: EmailStr
+    name: str = Field(..., min_length=1, max_length=100)
+
+class UserCreate(UserBase):
+    password: str = Field(..., min_length=8)
+
+class UserResponse(UserBase):
+    id: int
+    created_at: datetime
+    
+    model_config = {"from_attributes": True}
+```
+
+#### **Service Layer Pattern**
+```python
+# ✅ DO: Use service layer for business logic
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.repositories.user_repository import UserRepository
+from app.schemas.user import UserCreate, UserResponse
+
+class UserService:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+        self.user_repo = UserRepository(db)
+    
+    async def create_user(self, user_data: UserCreate) -> UserResponse:
+        # Business logic here
+        user = await self.user_repo.create(user_data)
+        return UserResponse.model_validate(user)
+```
+
+### **Testing Patterns**
+```python
+# ✅ DO: Use pytest with async support
+import pytest
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+
+@pytest.mark.asyncio
+async def test_create_user(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    auth_headers: dict
+):
+    """Test user creation."""
+    user_data = {
+        "email": "test@example.com",
+        "name": "Test User",
+        "password": "testpass123"
+    }
+    
+    response = await client.post(
+        "/users/",
+        json=user_data,
+        headers=auth_headers
+    )
+    
+    assert response.status_code == 201
+    data = response.json()
+    assert data["email"] == user_data["email"]
+```
+
+### **Database Migrations**
+```bash
+# ✅ DO: Use Alembic in Docker
+docker-compose exec backend alembic revision --autogenerate -m "Add user table"
+docker-compose exec backend alembic upgrade head
+
+# Or use make commands
+make shell-backend
+# Inside container:
+alembic revision --autogenerate -m "Description"
+alembic upgrade head
+```
+
+### **Celery Background Tasks**
+```python
+# ✅ DO: Use Celery for async tasks
+from app.core.celery_app import celery_app
+from app.services.music_sync_service import MusicSyncService
+
+@celery_app.task
+def sync_spotify_playlist(user_id: int, playlist_id: str) -> dict:
+    """Sync Spotify playlist in background."""
+    service = MusicSyncService()
+    return service.sync_playlist(user_id, playlist_id)
+
+# In your route:
+@router.post("/sync")
+async def trigger_sync(playlist_data: PlaylistSync):
+    task = sync_spotify_playlist.delay(playlist_data.user_id, playlist_data.playlist_id)
+    return {"task_id": task.id}
+```
+
+## **⚛️ Frontend Development (React + TypeScript)**
+
+### **File Structure Patterns**
+```
+frontend/src/
+├── components/    # Reusable UI components
+├── pages/         # Route components
+├── services/      # API calls and external services
+├── store/         # Redux store and slices
+├── hooks/         # Custom React hooks
+├── utils/         # Shared utilities
+└── types/         # TypeScript type definitions
+```
+
+### **Code Quality Standards**
+```bash
+# ✅ DO: Always run linting/formatting in Docker
+make lint-fix      # Runs ESLint with --fix
+make format        # Runs Prettier
+make type-check    # Runs TypeScript compiler
+
+# ❌ DON'T: Run tools directly
+npm run lint      # Use Docker instead
+```
+
+### **React Component Patterns**
+
+#### **Component Structure**
+```typescript
+// ✅ DO: Use TypeScript interfaces and proper component structure
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
+
+interface PlaylistCardProps {
+  playlistId: string;
+  onSync?: (playlistId: string) => void;
+  className?: string;
+}
+
+export const PlaylistCard: React.FC<PlaylistCardProps> = ({
+  playlistId,
+  onSync,
+  className
+}) => {
+  const { data: playlist, isLoading, error } = useQuery({
+    queryKey: ['playlist', playlistId],
+    queryFn: () => playlistApi.getPlaylist(playlistId),
+  });
+
+  const handleSync = () => {
+    if (onSync) {
+      onSync(playlistId);
+      toast.success('Sync started!');
+    }
+  };
+
+  if (isLoading) return <PlaylistSkeleton />;
+  if (error) return <ErrorMessage error={error} />;
+
+  return (
+    <div className={cn('rounded-lg border bg-card p-4', className)}>
+      <h3 className="font-semibold">{playlist?.name}</h3>
+      <button
+        onClick={handleSync}
+        className="mt-2 rounded bg-primary px-3 py-1 text-primary-foreground"
+      >
+        Sync Playlist
+      </button>
+    </div>
+  );
+};
+```
+
+#### **Custom Hooks**
+```typescript
+// ✅ DO: Create reusable hooks for common patterns
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { playlistApi } from '../services/playlist-api';
+
+export const usePlaylistSync = (playlistId: string) => {
+  const queryClient = useQueryClient();
+  
+  const syncMutation = useMutation({
+    mutationFn: (id: string) => playlistApi.syncPlaylist(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playlists'] });
+      toast.success('Playlist synced successfully!');
+    },
+    onError: (error) => {
+      toast.error(`Sync failed: ${error.message}`);
+    },
+  });
+
+  return {
+    syncPlaylist: syncMutation.mutate,
+    isSyncing: syncMutation.isPending,
+    syncError: syncMutation.error,
+  };
+};
+```
+
+#### **Redux Store Patterns**
+```typescript
+// ✅ DO: Use Redux Toolkit with proper typing
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+
+interface AuthState {
+  user: User | null;
+  token: string | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+const initialState: AuthState = {
+  user: null,
+  token: null,
+  isLoading: false,
+  error: null,
+};
+
+export const loginUser = createAsyncThunk(
+  'auth/loginUser',
+  async (credentials: LoginCredentials, { rejectWithValue }) => {
+    try {
+      const response = await authApi.login(credentials);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Login failed');
+    }
+  }
+);
+
+const authSlice = createSlice({
+  name: 'auth',
+  initialState,
+  reducers: {
+    logout: (state) => {
+      state.user = null;
+      state.token = null;
+    },
+    clearError: (state) => {
+      state.error = null;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(loginUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(loginUser.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+      })
+      .addCase(loginUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+  },
+});
+
+export const { logout, clearError } = authSlice.actions;
+export default authSlice.reducer;
+```
+
+#### **API Service Patterns**
+```typescript
+// ✅ DO: Use axios with proper error handling and types
+import axios, { AxiosResponse } from 'axios';
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  timeout: 10000,
+});
+
+// Request interceptor for auth
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Handle auth errors
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+export interface ApiResponse<T> {
+  data: T;
+  message?: string;
+}
+
+export const playlistApi = {
+  getPlaylists: (): Promise<AxiosResponse<ApiResponse<Playlist[]>>> =>
+    api.get('/playlists'),
+    
+  getPlaylist: (id: string): Promise<AxiosResponse<ApiResponse<Playlist>>> =>
+    api.get(`/playlists/${id}`),
+    
+  syncPlaylist: (id: string): Promise<AxiosResponse<ApiResponse<SyncResult>>> =>
+    api.post(`/playlists/${id}/sync`),
+};
+```
+
+### **TailwindCSS Patterns**
+```typescript
+// ✅ DO: Use utility classes with proper responsive design
+const buttonVariants = {
+  default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+  secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+  outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+};
+
+// ✅ DO: Use clsx/cn for conditional classes
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+// Usage
+<button
+  className={cn(
+    'inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors',
+    buttonVariants[variant],
+    disabled && 'pointer-events-none opacity-50',
+    className
+  )}
+>
+  {children}
+</button>
+```
+
+### **Testing Patterns**
+```typescript
+// ✅ DO: Use Vitest with React Testing Library
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { PlaylistCard } from './PlaylistCard';
+
+const renderWithProviders = (component: React.ReactElement) => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  
+  return render(
+    <QueryClientProvider client={queryClient}>
+      {component}
+    </QueryClientProvider>
+  );
+};
+
+describe('PlaylistCard', () => {
+  it('should display playlist name and sync button', async () => {
+    const mockOnSync = vi.fn();
+    
+    renderWithProviders(
+      <PlaylistCard playlistId="123" onSync={mockOnSync} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('My Playlist')).toBeInTheDocument();
+    });
+
+    const syncButton = screen.getByRole('button', { name: /sync playlist/i });
+    fireEvent.click(syncButton);
+    
+    expect(mockOnSync).toHaveBeenCalledWith('123');
+  });
+});
+```
+
+## **🎵 Music Sync Integration**
+
+### **Spotify Integration Patterns**
+```python
+# ✅ DO: Use proper error handling for external APIs
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
+
+class SpotifyService:
+    def __init__(self, access_token: str):
+        self.sp = spotipy.Spotify(auth=access_token)
+    
+    async def get_user_playlists(self, user_id: str) -> list[dict]:
+        try:
+            results = self.sp.user_playlists(user_id)
+            return results['items']
+        except spotipy.SpotifyException as e:
+            logger.error(f"Spotify API error: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to fetch playlists: {e}"
+            )
+```
+
+### **YouTube Integration Patterns**
+```python
+# ✅ DO: Use async patterns for YouTube API
+from googleapiclient.discovery import build
+from google.auth.transport.requests import Request
+
+class YouTubeService:
+    def __init__(self, credentials):
+        self.youtube = build('youtube', 'v3', credentials=credentials)
+    
+    async def search_track(self, query: str) -> dict | None:
+        try:
+            request = self.youtube.search().list(
+                part='snippet',
+                q=query,
+                maxResults=1,
+                type='video'
+            )
+            response = request.execute()
+            
+            if response['items']:
+                return response['items'][0]
+            return None
+            
+        except Exception as e:
+            logger.error(f"YouTube API error: {e}")
+            return None
+```
+
+## **🧪 Testing Rules**
+
+### **Always Use Docker for Tests**
+```bash
+# ✅ DO: Run tests in containers
+make test              # All tests
+make test-backend      # Backend only
+make test-frontend     # Frontend only
+make test-coverage     # With coverage
+
+# ❌ DON'T: Run tests directly
+pytest                 # Will fail - no database
+npm test              # Will fail - wrong environment
+```
+
+### **Backend Test Structure**
+```python
+# ✅ DO: Use proper test fixtures and factories
+import pytest
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.deps import get_db
+from app.main import app
+
+@pytest.fixture
+async def client(db_session: AsyncSession):
+    app.dependency_overrides[get_db] = lambda: db_session
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        yield ac
+    app.dependency_overrides.clear()
+
+@pytest.fixture
+def user_factory():
+    class UserFactory:
+        @staticmethod
+        def create(**kwargs):
+            defaults = {
+                "email": "test@example.com",
+                "name": "Test User",
+                "password": "testpass123"
+            }
+            defaults.update(kwargs)
+            return defaults
+    return UserFactory()
+```
+
+### **Frontend Test Structure**
+```typescript
+// ✅ DO: Mock external dependencies
+import { vi } from 'vitest';
+
+// Mock API calls
+vi.mock('../services/playlist-api', () => ({
+  playlistApi: {
+    getPlaylists: vi.fn(() => Promise.resolve({ data: mockPlaylists })),
+    syncPlaylist: vi.fn(() => Promise.resolve({ data: mockSyncResult })),
+  },
+}));
+
+// Test component with mocked dependencies
+describe('PlaylistList', () => {
+  it('should display playlists', async () => {
+    renderWithProviders(<PlaylistList />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('My Playlist')).toBeInTheDocument();
+    });
+  });
+});
+```
+
+## **📊 Monitoring & Debugging**
+
+### **Logging Patterns**
+```python
+# ✅ DO: Use structured logging
+import structlog
+
+logger = structlog.get_logger(__name__)
+
+async def sync_playlist(user_id: int, playlist_id: str):
+    logger.info(
+        "Starting playlist sync",
+        user_id=user_id,
+        playlist_id=playlist_id
+    )
+    
+    try:
+        result = await perform_sync(user_id, playlist_id)
+        logger.info(
+            "Playlist sync completed",
+            user_id=user_id,
+            playlist_id=playlist_id,
+            tracks_synced=result.track_count
+        )
+        return result
+    except Exception as e:
+        logger.error(
+            "Playlist sync failed",
+            user_id=user_id,
+            playlist_id=playlist_id,
+            error=str(e)
+        )
+        raise
+```
+
+### **Health Checks**
+```bash
+# ✅ DO: Use health check endpoints
+make health            # Check all services
+curl http://localhost:8000/health  # Backend health
+curl http://localhost:3000         # Frontend health
+```
+
+### **Celery Monitoring**
+```bash
+# ✅ DO: Monitor background tasks
+# Access Flower UI at http://localhost:5555
+make logs-celery       # View worker logs
+
+# In backend container:
+celery -A app.core.celery_app inspect active  # Active tasks
+celery -A app.core.celery_app inspect stats   # Worker stats
+```
+
+## **🚀 Deployment & Production**
+
+### **Production Environment**
+```bash
+# ✅ DO: Use production docker-compose
+make prod-build        # Build production images
+make prod-up          # Start production
+make prod-logs        # View production logs
+```
+
+### **Database Operations**
+```bash
+# ✅ DO: Use containerized database operations
+make db-shell         # Access PostgreSQL
+make db-backup        # Create backup
+make db-restore BACKUP_FILE=backup.sql  # Restore
+```
+
+### **Environment Variables**
+```bash
+# ✅ DO: Always use .env file (never commit secrets)
+cp env.example .env
+# Edit .env with real values:
+# - SPOTIFY_CLIENT_ID=your_spotify_client_id
+# - YOUTUBE_API_KEY=your_youtube_api_key
+# - SECRET_KEY=your-secret-key
+```
+
+## **🔒 Security Patterns**
+
+### **Authentication**
+```python
+# ✅ DO: Use proper JWT handling
+from app.core.security import create_access_token, verify_token
+
+@router.post("/login")
+async def login(credentials: LoginCredentials, db: AsyncSession = Depends(get_db)):
+    user = await authenticate_user(db, credentials.email, credentials.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    access_token = create_access_token(data={"sub": user.email})
+    return {"access_token": access_token, "token_type": "bearer"}
+```
+
+### **Input Validation**
+```python
+# ✅ DO: Use Pydantic for validation
+from pydantic import BaseModel, validator, Field
+
+class PlaylistCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    description: str | None = Field(None, max_length=500)
+    is_public: bool = False
+    
+    @validator('name')
+    def validate_name(cls, v):
+        if not v.strip():
+            raise ValueError('Name cannot be empty')
+        return v.strip()
+```
+
+## **⚡ Performance Patterns**
+
+### **Database Optimization**
+```python
+# ✅ DO: Use proper async patterns and indexing
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+
+async def get_user_playlists(db: AsyncSession, user_id: int):
+    stmt = select(Playlist).options(
+        selectinload(Playlist.tracks)
+    ).where(Playlist.user_id == user_id)
+    
+    result = await db.execute(stmt)
+    return result.scalars().all()
+```
+
+### **Frontend Optimization**
+```typescript
+// ✅ DO: Use React Query for caching and React.memo for optimization
+import { memo } from 'react';
+
+export const PlaylistCard = memo<PlaylistCardProps>(({ playlistId, onSync }) => {
+  const { data: playlist } = useQuery({
+    queryKey: ['playlist', playlistId],
+    queryFn: () => playlistApi.getPlaylist(playlistId),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Component implementation
+});
+```
+
+### **Redis Caching**
+```python
+# ✅ DO: Use Redis for caching expensive operations
+import aioredis
+from app.core.cache import get_redis
+
+async def get_cached_playlist(playlist_id: str) -> dict | None:
+    redis = await get_redis()
+    cached = await redis.get(f"playlist:{playlist_id}")
+    
+    if cached:
+        return json.loads(cached)
+    
+    # Fetch from database/API
+    playlist = await fetch_playlist(playlist_id)
+    
+    # Cache for 1 hour
+    await redis.setex(
+        f"playlist:{playlist_id}",
+        3600,
+        json.dumps(playlist)
+    )
+    
+    return playlist
+```
+
+## **🎯 Quick Reference Commands**
+
+### **Development Lifecycle**
+```bash
+# Setup new environment
+make setup
+make build
+make up
+
+# Daily development
+make logs-backend      # Backend development
+make logs-frontend     # Frontend development
+make test             # Before commits
+make lint-fix         # Fix code style
+
+# Database work
+make db-shell         # SQL queries
+make shell-backend    # Alembic migrations
+
+# Debugging
+make health           # Check all services
+make stats           # Resource usage
+```
+
+### **Common Debugging**
+```bash
+# Service not starting?
+make down && make up
+make logs
+
+# Database issues?
+make db-shell
+# Check connection: \l
+
+# Frontend build issues?
+make shell-frontend
+# Check: npm run build
+
+# Backend API issues?
+make shell-backend
+# Check: curl http://localhost:8000/health
+```
+
+## **❌ Common Mistakes to Avoid**
+
+1. **Running commands outside Docker** - Always use `make` or `docker-compose exec`
+2. **Direct database access** - Use `make db-shell` instead of local psql
+3. **Installing packages locally** - Modify `requirements.txt` or `package.json` and rebuild
+4. **Ignoring type errors** - Fix TypeScript/MyPy errors before committing
+5. **Skipping tests** - Always run `make test` before pushing
+6. **Hardcoding secrets** - Use environment variables in `.env`
+7. **Direct file uploads** - Use proper API endpoints with validation
+
+---
+
+*These rules ensure consistent, Docker-based development for the Music Sync Hub platform. Always prefer containerized operations over local commands.*
