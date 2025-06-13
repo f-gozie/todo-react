@@ -1,6 +1,6 @@
 # Music Sync Hub
 
-A modern web application for synchronizing your liked songs across Spotify, Deezer, and YouTube Music platforms.
+A modern web application for synchronizing your liked songs across Spotify and YouTube Music platforms.
 
 ![Music Sync Hub](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.68+-green.svg)
@@ -8,7 +8,7 @@ A modern web application for synchronizing your liked songs across Spotify, Deez
 
 ## Features
 
-- **Multi-Platform Support**: Connect and manage your music across Spotify, Deezer, and YouTube Music
+- **Multi-Platform Support**: Connect and manage your music across Spotify and YouTube Music
 - **Liked Songs Synchronization**: Analyze differences in your liked songs across platforms and sync them with one click
 - **Beautiful UI**: Modern, futuristic interface with glassmorphism effects and smooth animations
 - **Playlist Management**: View and manage playlists from all connected services
@@ -20,7 +20,7 @@ A modern web application for synchronizing your liked songs across Spotify, Deez
 
 - **Backend**: FastAPI (Python)
 - **Frontend**: HTML5, CSS3 (with glassmorphism), JavaScript
-- **APIs**: Spotify Web API, Deezer API, YouTube Data API v3
+- **APIs**: Spotify Web API, YouTube Data API v3
 - **UI Framework**: HTMX for dynamic interactions
 - **Authentication**: OAuth 2.0 for all platforms
 
@@ -29,7 +29,6 @@ A modern web application for synchronizing your liked songs across Spotify, Deez
 - Python 3.8 or higher
 - API credentials for:
   - [Spotify Developer App](https://developer.spotify.com/dashboard)
-  - [Deezer Application](https://developers.deezer.com/myapps)
   - [Google Cloud Console Project](https://console.cloud.google.com/) with YouTube Data API v3 enabled
 
 ## Installation
@@ -60,11 +59,6 @@ A modern web application for synchronizing your liked songs across Spotify, Deez
    SPOTIFY_CLIENT_SECRET = "your_spotify_client_secret"
    SPOTIFY_REDIRECT_URI = "http://localhost:8000/callback/spotify"
    SPOTIFY_SCOPES = "user-library-read user-library-modify playlist-read-private user-read-private user-read-email"
-
-   # Deezer Configuration
-   DEEZER_APP_ID = "your_deezer_app_id"
-   DEEZER_APP_SECRET = "your_deezer_app_secret"
-   DEEZER_REDIRECT_URI = "http://localhost:8000/callback/deezer"
 
    # YouTube Configuration
    YOUTUBE_SCOPES = ["https://www.googleapis.com/auth/youtube.readonly", 
@@ -107,7 +101,6 @@ music_sync_app/
 ├── main.py                 # Main FastAPI application
 ├── config.py              # Configuration file (create this)
 ├── spotify_client.py      # Spotify API integration
-├── deezer_client.py       # Deezer API integration
 ├── youtube_client.py      # YouTube API integration
 ├── sync_manager.py        # Synchronization logic
 ├── requirements.txt       # Python dependencies

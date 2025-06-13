@@ -1,0 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans bg-dark-bg text-text-primary min-h-screen overflow-x-hidden;
+    background-image: 
+      radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(240, 147, 251, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 40% 20%, rgba(79, 172, 254, 0.1) 0%, transparent 50%);
+    background-attachment: fixed;
+  }
+
+  /* Animated particles background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      radial-gradient(2px 2px at 20% 30%, white, transparent),
+      radial-gradient(2px 2px at 60% 70%, white, transparent),
+      radial-gradient(1px 1px at 50% 50%, white, transparent);
+    background-size: 200px 200px;
+    background-repeat: repeat;
+    opacity: 0.02;
+    animation: stars 200s linear infinite;
+    z-index: -1;
+  }
+
+  @keyframes stars {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(-100px, -100px); }
+  }
+}
+
+@layer components {
+  /* Glass card component */
+  .glass-card {
+    @apply bg-dark-glass backdrop-blur-20 rounded-2xl border border-dark-border-light;
+  }
+
+  /* Service button variants */
+  .btn-spotify {
+    @apply border-2 border-spotify text-white hover:bg-spotify hover:shadow-glow-spotify;
+  }
+  
+  .btn-deezer {
+    @apply border-2 border-deezer text-white hover:bg-deezer hover:shadow-glow-deezer;
+  }
+  
+  .btn-youtube {
+    @apply border-2 border-youtube text-white hover:bg-youtube hover:shadow-glow-youtube;
+  }
+
+  /* Gradient text */
+  .text-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-accent {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Form inputs with glass effect */
+  .input-glass {
+    @apply w-full px-4 py-3 bg-dark-glass border border-dark-border rounded-xl text-text-primary placeholder-text-secondary;
+    @apply focus:outline-none focus:border-dark-border focus:bg-dark-card transition-all duration-300;
+  }
+
+  /* Primary button with gradient */
+  .btn-primary {
+    @apply bg-accent-gradient text-white font-semibold py-3 px-8 rounded-full;
+    @apply hover:shadow-glow-blue-hover transform hover:-translate-y-0.5 transition-all duration-300;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none;
+  }
+
+  /* Status indicator */
+  .status-connected {
+    @apply w-2 h-2 bg-green-400 rounded-full;
+  }
+
+  .status-disconnected {
+    @apply w-2 h-2 bg-gray-400 rounded-full;
+  }
+
+  /* Additional component styles */
+  .input-glass select {
+    @apply bg-dark-glass border border-dark-border text-text-primary;
+  }
+
+  .input-glass option {
+    @apply bg-dark-card text-text-primary;
+  }
+} 

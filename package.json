@@ -1,0 +1,87 @@
+{
+  "name": "music-sync-hub",
+  "version": "2.0.0",
+  "description": "Synchronize your music across streaming platforms - Monorepo",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && python -m build",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && python -m pytest",
+    "test:frontend": "cd frontend && npm run test",
+    "lint": "npm run lint:backend && npm run lint:frontend",
+    "lint:backend": "cd backend && ruff check . && black --check .",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:fix": "npm run lint:fix:backend && npm run lint:fix:frontend",
+    "lint:fix:backend": "cd backend && ruff check --fix . && black .",
+    "lint:fix:frontend": "cd frontend && npm run lint:fix",
+    "format": "npm run format:backend && npm run format:frontend",
+    "format:backend": "cd backend && black .",
+    "format:frontend": "cd frontend && npm run format",
+    "type-check": "npm run type-check:backend && npm run type-check:frontend",
+    "type-check:backend": "cd backend && mypy app",
+    "type-check:frontend": "cd frontend && npm run type-check",
+    "clean": "npm run clean:frontend && npm run clean:backend",
+    "clean:frontend": "cd frontend && rm -rf node_modules dist",
+    "clean:backend": "cd backend && rm -rf __pycache__ .pytest_cache build dist *.egg-info",
+    "install:all": "npm install && cd frontend && npm install",
+    "docker:build": "docker build -t music-sync-hub .",
+    "docker:run": "docker run -p 8000:8000 -p 3000:3000 music-sync-hub",
+    "docker:dev": "docker-compose up --build",
+    "docker:prod": "docker-compose -f docker-compose.prod.yml up --build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "husky": "^8.0.0",
+    "lint-staged": "^15.0.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "backend/**/*.py": [
+      "black",
+      "ruff check --fix"
+    ],
+    "frontend/**/*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/music-sync-hub/music-sync-hub.git"
+  },
+  "keywords": [
+    "music",
+    "sync",
+    "spotify",
+    "youtube",
+    "monorepo",
+    "fastapi",
+    "react"
+  ],
+  "author": "Music Sync Hub Team",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/music-sync-hub/music-sync-hub/issues"
+  },
+  "homepage": "https://github.com/music-sync-hub/music-sync-hub#readme"
+} 

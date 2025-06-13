@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spotify Profile - Music Sync Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --spotify-gradient: linear-gradient(135deg, #1DB954 0%, #1ed760 100%);
+            --dark-bg: #0a0a0f;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --text-primary: #ffffff;
+            --text-secondary: #a8a8b3;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --spotify-green: #1DB954;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(29, 185, 84, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(102, 126, 234, 0.1) 0%, transparent 50%);
+            background-attachment: fixed;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.6s ease;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .back-link:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .profile-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            padding: 40px;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.8s ease;
+        }
+        
+        .profile-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: var(--spotify-gradient);
+        }
+        
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--spotify-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            box-shadow: 0 10px 30px rgba(29, 185, 84, 0.3);
+        }
+        
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .profile-info h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: var(--spotify-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .profile-stats {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--spotify-green);
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .profile-details {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid var(--glass-border);
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .detail-label {
+            color: var(--text-secondary);
+        }
+        
+        .detail-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+        
+        .action-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .action-card:hover {
+            background: rgba(29, 185, 84, 0.1);
+            border-color: var(--spotify-green);
+            transform: translateY(-5px);
+        }
+        
+        .action-card i {
+            font-size: 2.5rem;
+            color: var(--spotify-green);
+        }
+        
+        .action-card span {
+            font-weight: 500;
+        }
+        
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 768px) {
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .profile-stats {
+                justify-content: center;
+            }
+            
+            .detail-item {
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/" class="back-link">
+                <i class="fas fa-arrow-left"></i>
+                Back to Dashboard
+            </a>
+        </div>
+        
+        <div class="profile-card">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    {% if user.images and user.images|length > 0 %}
+                        <img src="{{ user.images[0].url }}" alt="{{ user.display_name }}">
+                    {% else %}
+                        <i class="fas fa-user"></i>
+                    {% endif %}
+                </div>
+                <div class="profile-info">
+                    <h1>{{ user.display_name }}</h1>
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <span class="stat-value">{{ user.followers.total | default(0) }}</span>
+                            <span class="stat-label">Followers</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">{{ user.product | capitalize }}</span>
+                            <span class="stat-label">Account Type</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="profile-details">
+                <div class="detail-item">
+                    <span class="detail-label">Email</span>
+                    <span class="detail-value">{{ user.email }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Country</span>
+                    <span class="detail-value">{{ user.country }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">User ID</span>
+                    <span class="detail-value">{{ user.id }}</span>
+                </div>
+                {% if user.external_urls and user.external_urls.spotify %}
+                <div class="detail-item">
+                    <span class="detail-label">Profile URL</span>
+                    <span class="detail-value">
+                        <a href="{{ user.external_urls.spotify }}" target="_blank" style="color: var(--spotify-green); text-decoration: none;">
+                            View on Spotify <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="quick-actions">
+            <a href="/spotify/liked-songs" class="action-card">
+                <i class="fas fa-heart"></i>
+                <span>Liked Songs</span>
+            </a>
+            <a href="/spotify/playlists" class="action-card">
+                <i class="fas fa-list"></i>
+                <span>My Playlists</span>
+            </a>
+            <a href="/sync/liked/analyze" class="action-card">
+                <i class="fas fa-sync-alt"></i>
+                <span>Sync Library</span>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

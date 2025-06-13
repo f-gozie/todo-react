@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ service_name }} Liked Songs - Music Sync Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --dark-bg: #0a0a0f;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --text-primary: #ffffff;
+            --text-secondary: #a8a8b3;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --spotify-green: #1DB954;
+            --deezer-orange: #FF6D00;
+            --youtube-red: #FF0000;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(240, 147, 251, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(79, 172, 254, 0.1) 0%, transparent 50%);
+            background-attachment: fixed;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20% 30%, white, transparent),
+                radial-gradient(2px 2px at 60% 70%, white, transparent),
+                radial-gradient(1px 1px at 50% 50%, white, transparent);
+            background-size: 200px 200px;
+            background-repeat: repeat;
+            opacity: 0.02;
+            animation: stars 200s linear infinite;
+            z-index: -1;
+        }
+        
+        @keyframes stars {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-100px, -100px); }
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .nav-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            padding: 20px 0;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+        }
+        
+        .back-link:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(-5px);
+        }
+        
+        .service-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: var(--glass-bg);
+            border: 1px solid;
+        }
+        
+        .service-indicator.spotify { border-color: var(--spotify-green); }
+        .service-indicator.deezer { border-color: var(--deezer-orange); }
+        .service-indicator.youtube { border-color: var(--youtube-red); }
+        
+        .service-indicator i { font-size: 1.2rem; }
+        .spotify .service-indicator i { color: var(--spotify-green); }
+        .deezer .service-indicator i { color: var(--deezer-orange); }
+        .youtube .service-indicator i { color: var(--youtube-red); }
+        
+        .page-header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 0.8s ease;
+        }
+        
+        .page-header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 40px;
+            animation: fadeIn 0.8s ease 0.2s both;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .search-bar {
+            margin-bottom: 30px;
+            animation: fadeIn 0.8s ease 0.3s both;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 16px 24px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+        
+        .songs-grid {
+            display: grid;
+            gap: 15px;
+            animation: fadeInUp 0.8s ease 0.4s both;
+        }
+        
+        .song-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .song-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+        }
+        
+        .song-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .spotify .song-card:hover::before { background: var(--spotify-green); }
+        .deezer .song-card:hover::before { background: var(--deezer-orange); }
+        .youtube .song-card:hover::before { background: var(--youtube-red); }
+        
+        .album-art {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            object-fit: cover;
+            flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .song-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .song-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .song-artist {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .song-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .song-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            transform: scale(1.1);
+        }
+        
+        .no-songs {
+            text-align: center;
+            padding: 100px 20px;
+            color: var(--text-secondary);
+        }
+        
+        .no-songs i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .load-more {
+            text-align: center;
+            margin-top: 40px;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .load-more-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 12px 30px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .load-more-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-2px);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .page-header h1 {
+                font-size: 2rem;
+            }
+            
+            .stats-bar {
+                gap: 20px;
+            }
+            
+            .stat-value {
+                font-size: 2rem;
+            }
+            
+            .song-card {
+                padding: 15px;
+            }
+            
+            .album-art {
+                width: 60px;
+                height: 60px;
+            }
+        }
+    </style>
+</head>
+<body class="{{ service_name.lower() }}">
+    <div class="container">
+        <nav class="nav-header">
+            <a href="/" class="back-link">
+                <i class="fas fa-arrow-left"></i>
+                Back to Home
+            </a>
+            <div class="service-indicator {{ service_name.lower() }}">
+                <i class="fab fa-{{ service_name.lower() }}"></i>
+                <span>{{ service_name }}</span>
+            </div>
+        </nav>
+        
+        <div class="page-header">
+            <h1><i class="fas fa-heart"></i> Liked {{ 'Songs' if service_name != 'YouTube' else 'Videos' }}</h1>
+        </div>
+        
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value">{{ songs | length }}</div>
+                <div class="stat-label">Total {{ 'Songs' if service_name != 'YouTube' else 'Videos' }}</div>
+            </div>
+        </div>
+        
+        <div class="search-bar">
+            <input type="text" class="search-input" placeholder="Search your liked {{ 'songs' if service_name != 'YouTube' else 'videos' }}..." id="searchInput" onkeyup="filterSongs()">
+        </div>
+        
+        <div class="songs-grid" id="songsGrid">
+            {% if songs %}
+                {% for song in songs %}
+                    <div class="song-card" data-title="{{ song.title | lower }}" data-artist="{{ song.artist | lower if song.artist }}">
+                        {% if song.album_art %}
+                            <img src="{{ song.album_art }}" alt="Album Art" class="album-art">
+                        {% else %}
+                            <div class="album-art" style="background: var(--glass-bg); display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-music" style="color: var(--text-secondary); font-size: 1.5rem;"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="song-info">
+                            <div class="song-title" title="{{ song.title }}">{{ song.title }}</div>
+                            <div class="song-artist" title="{{ song.artist }}">{{ song.artist if song.artist else 'Unknown Artist' }}</div>
+                            <div class="song-meta">
+                                {% if song.album %}
+                                    <div class="meta-item">
+                                        <i class="fas fa-compact-disc"></i>
+                                        <span>{{ song.album }}</span>
+                                    </div>
+                                {% endif %}
+                                {% if song.duration_ms %}
+                                    <div class="meta-item">
+                                        <i class="fas fa-clock"></i>
+                                        <span>{{ (song.duration_ms / 60000) | round(1) }} min</span>
+                                    </div>
+                                {% endif %}
+                                {% if song.isrc %}
+                                    <div class="meta-item" title="ISRC: {{ song.isrc }}">
+                                        <i class="fas fa-barcode"></i>
+                                        <span>ISRC</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="song-actions">
+                            {% if song.external_url %}
+                                <a href="{{ song.external_url }}" target="_blank" class="action-btn" title="Open in {{ service_name }}">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            {% endif %}
+                            <button class="action-btn" title="More options">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-songs">
+                    <i class="fas fa-heart-broken"></i>
+                    <h2>No Liked {{ 'Songs' if service_name != 'YouTube' else 'Videos' }} Yet</h2>
+                    <p>Start liking {{ 'songs' if service_name != 'YouTube' else 'videos' }} on {{ service_name }} and they'll appear here!</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        {% if songs and songs | length >= 50 %}
+            <div class="load-more">
+                <button class="load-more-btn">
+                    <i class="fas fa-plus-circle"></i>
+                    Load More
+                </button>
+            </div>
+        {% endif %}
+    </div>
+    
+    <script>
+        function filterSongs() {
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const songCards = document.querySelectorAll('.song-card');
+            
+            songCards.forEach(card => {
+                const title = card.getAttribute('data-title');
+                const artist = card.getAttribute('data-artist');
+                
+                if (title.includes(searchInput) || (artist && artist.includes(searchInput))) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html> 

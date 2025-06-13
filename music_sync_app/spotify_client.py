@@ -85,3 +85,66 @@ def get_playlist_tracks(sp_client: spotipy.Spotify, playlist_id: str) -> list:
 if __name__ == '__main__':
     # ... (existing __main__ for testing, if any)
     print("Spotify client module with add_liked_song.")
+
+def create_playlist_on_spotify(sp_client: spotipy.Spotify, name: str, description: str = "", public: bool = False) -> str | None:
+    """
+    Creates a new playlist on Spotify for the current user.
+    Returns the playlist ID on success, None on failure.
+    """
+    if not sp_client or not name:
+        print("Error: Spotify client or playlist name not provided for create_playlist.")
+        return None
+    
+    try:
+        # Get current user to create playlist
+        user = sp_client.current_user()
+        user_id = user.get('id')
+        if not user_id:
+            print("Error: Could not get current user ID from Spotify.")
+            return None
+        
+        # Create the playlist
+        playlist = sp_client.user_playlist_create(
+            user=user_id,
+            name=name,
+            public=public,
+            collaborative=False,
+            description=description
+        )
+        
+        if playlist and playlist.get('id'):
+            print(f"Successfully created Spotify playlist '{name}' with ID: {playlist['id']}")
+            return playlist['id']
+        else:
+            print(f"Error: Failed to create Spotify playlist '{name}' - no ID returned")
+            return None
+            
+    except spotipy.SpotifyException as e:
+        print(f"Spotify API error while creating playlist '{name}': {e}")
+    except Exception as e:
+        print(f"Unexpected error occurred while creating Spotify playlist '{name}': {e}")
+    
+    return None
+
+
+def add_track_to_spotify_playlist(sp_client: spotipy.Spotify, playlist_id: str, track_id: str) -> bool:
+    """
+    Adds a track to a specific Spotify playlist.
+    Returns True on success, False on failure.
+    """
+    if not sp_client or not playlist_id or not track_id:
+        print("Error: Spotify client, playlist_id, or track_id not provided for add_track_to_playlist.")
+        return False
+    
+    try:
+        # Add track to playlist
+        sp_client.playlist_add_items(playlist_id, [track_id])
+        print(f"Successfully added track {track_id} to Spotify playlist {playlist_id}")
+        return True
+        
+    except spotipy.SpotifyException as e:
+        print(f"Spotify API error while adding track {track_id} to playlist {playlist_id}: {e}")
+    except Exception as e:
+        print(f"Unexpected error occurred while adding track {track_id} to Spotify playlist {playlist_id}: {e}")
+    
+    return False

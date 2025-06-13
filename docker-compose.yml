@@ -1,0 +1,197 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: music-sync-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: music_sync_hub
+      POSTGRES_USER: music_sync_user
+      POSTGRES_PASSWORD: music_sync_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U music_sync_user -d music_sync_hub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - music-sync-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: music-sync-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass music_sync_redis_password
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - music-sync-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: music-sync-backend
+    restart: unless-stopped
+    command: /bin/sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    environment:
+      - DATABASE_URL=postgresql://music_sync_user:music_sync_password@postgres:5432/music_sync_hub
+      - REDIS_URL=redis://:music_sync_redis_password@redis:6379
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - REFRESH_TOKEN_EXPIRE_DAYS=7
+      - CELERY_BROKER_URL=redis://:music_sync_redis_password@redis:6379
+      - CELERY_RESULT_BACKEND=redis://:music_sync_redis_password@redis:6379
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app:cached
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - music-sync-network
+
+  # Frontend Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: music-sync-frontend
+    restart: unless-stopped
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+      - VITE_APP_NAME=Music Sync Hub
+      - VITE_APP_VERSION=2.0.0
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app:cached
+      - /app/node_modules
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - music-sync-network
+
+  # Celery Worker for Background Tasks
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: music-sync-celery-worker
+    restart: unless-stopped
+    command: celery -A app.core.celery_app worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://music_sync_user:music_sync_password@postgres:5432/music_sync_hub
+      - REDIS_URL=redis://:music_sync_redis_password@redis:6379
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - CELERY_BROKER_URL=redis://:music_sync_redis_password@redis:6379
+      - CELERY_RESULT_BACKEND=redis://:music_sync_redis_password@redis:6379
+    volumes:
+      - ./backend:/app:cached
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.core.celery", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - music-sync-network
+
+  # Celery Beat for Scheduled Tasks
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: music-sync-celery-beat
+    restart: unless-stopped
+    command: celery -A app.core.celery_app beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://music_sync_user:music_sync_password@postgres:5432/music_sync_hub
+      - REDIS_URL=redis://:music_sync_redis_password@redis:6379
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - CELERY_BROKER_URL=redis://:music_sync_redis_password@redis:6379
+      - CELERY_RESULT_BACKEND=redis://:music_sync_redis_password@redis:6379
+    volumes:
+      - ./backend:/app:cached
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - music-sync-network
+
+  # Flower for Celery Monitoring (Optional)
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: music-sync-flower
+    restart: unless-stopped
+    command: celery -A app.core.celery_app flower --port=5555 --loglevel=info
+    environment:
+      - CELERY_BROKER_URL=redis://:music_sync_redis_password@redis:6379
+      - CELERY_RESULT_BACKEND=redis://:music_sync_redis_password@redis:6379
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+    networks:
+      - music-sync-network
+
+# Named volumes for data persistence
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# Custom network for service communication
+networks:
+  music-sync-network:
+    driver: bridge 

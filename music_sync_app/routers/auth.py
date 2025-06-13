@@ -14,11 +14,6 @@ from ..spotify_client import (
     create_spotify_oauth,
     temporary_token_cache as spotify_token_cache
 )
-from ..deezer_client import (
-    get_deezer_auth_url,
-    get_deezer_access_token,
-    temporary_token_cache as deezer_token_cache
-)
 from ..youtube_client import (
     create_youtube_flow,
     temporary_token_cache as youtube_token_cache,
@@ -66,50 +61,6 @@ async def callback_spotify(request: Request, code: Optional[str] = None) -> HTML
             f"<html><body>Spotify Auth Error: {e} <a href='/'>Home</a></body></html>",
             status_code=400
         )
-
-
-# ============================================================================
-# Deezer Authentication
-# ============================================================================
-
-@router.get("/deezer/login")
-async def login_deezer() -> RedirectResponse:
-    """Initiate Deezer OAuth flow."""
-    return RedirectResponse(get_deezer_auth_url())
-
-
-@router.get("/deezer/callback")
-async def callback_deezer(
-    request: Request,
-    code: Optional[str] = None,
-    error_reason: Optional[str] = None
-) -> HTMLResponse:
-    """Handle Deezer OAuth callback."""
-    if error_reason:
-        return HTMLResponse(
-            f"<html><body>Deezer login failed: {error_reason} "
-            f"<a href='/auth/deezer/login'>Try again</a></body></html>",
-            status_code=400
-        )
-    
-    if not code:
-        return HTMLResponse(
-            "<html><body>Deezer login failed: No code. "
-            "<a href='/auth/deezer/login'>Try again</a></body></html>",
-            status_code=400
-        )
-    
-    token = get_deezer_access_token(code)
-    if not token:
-        return HTMLResponse(
-            "<html><body>Deezer Token Error. <a href='/'>Home</a></body></html>",
-            status_code=400
-        )
-    
-    deezer_token_cache['deezer_access_token'] = token
-    return HTMLResponse(
-        "<html><body>Deezer Login Successful! <a href='/'>Home</a></body></html>"
-    )
 
 
 # ============================================================================

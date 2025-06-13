@@ -97,3 +97,91 @@ def get_playlist_items(youtube_service, playlist_id: str) -> list:
 
 if __name__ == '__main__':
     print("YouTube client module with add_liked_video.")
+
+def create_playlist_on_youtube(youtube_service, name: str, description: str = "", public: bool = False) -> str | None:
+    """
+    Creates a new playlist on YouTube for the current user.
+    Returns the playlist ID on success, None on failure.
+    """
+    if not youtube_service or not name:
+        print("Error: YouTube service or playlist name not provided for create_playlist.")
+        return None
+    
+    try:
+        # Determine privacy status
+        privacy_status = "public" if public else "private"
+        
+        # Create playlist request body
+        playlist_body = {
+            "snippet": {
+                "title": name,
+                "description": description
+            },
+            "status": {
+                "privacyStatus": privacy_status
+            }
+        }
+        
+        # Create the playlist
+        response = youtube_service.playlists().insert(
+            part="snippet,status",
+            body=playlist_body
+        ).execute()
+        
+        if response and response.get('id'):
+            playlist_id = response['id']
+            print(f"Successfully created YouTube playlist '{name}' with ID: {playlist_id}")
+            return playlist_id
+        else:
+            print(f"Error: Failed to create YouTube playlist '{name}' - no ID returned")
+            return None
+            
+    except HttpError as e:
+        print(f"YouTube API HttpError while creating playlist '{name}': {e.resp.status} - {e._get_reason()}")
+    except Exception as e:
+        print(f"Unexpected error occurred while creating YouTube playlist '{name}': {e}")
+    
+    return None
+
+
+def add_video_to_youtube_playlist(youtube_service, playlist_id: str, video_id: str) -> bool:
+    """
+    Adds a video to a specific YouTube playlist.
+    Returns True on success, False on failure.
+    """
+    if not youtube_service or not playlist_id or not video_id:
+        print("Error: YouTube service, playlist_id, or video_id not provided for add_video_to_playlist.")
+        return False
+    
+    try:
+        # Create playlist item request body
+        playlist_item_body = {
+            "snippet": {
+                "playlistId": playlist_id,
+                "resourceId": {
+                    "kind": "youtube#video",
+                    "videoId": video_id
+                }
+            }
+        }
+        
+        # Add video to playlist
+        response = youtube_service.playlistItems().insert(
+            part="snippet",
+            body=playlist_item_body
+        ).execute()
+        
+        if response and response.get('id'):
+            print(f"Successfully added video {video_id} to YouTube playlist {playlist_id}")
+            return True
+        else:
+            print(f"Error: Failed to add video {video_id} to YouTube playlist {playlist_id} - no ID returned")
+            return False
+            
+    except HttpError as e:
+        print(f"YouTube API HttpError while adding video {video_id} to playlist {playlist_id}: {e.resp.status} - {e._get_reason()}")
+        # Common errors: 400 (Bad Request) if video already in playlist, 403 (Forbidden) for permission issues
+    except Exception as e:
+        print(f"Unexpected error occurred while adding video {video_id} to YouTube playlist {playlist_id}: {e}")
+    
+    return False
